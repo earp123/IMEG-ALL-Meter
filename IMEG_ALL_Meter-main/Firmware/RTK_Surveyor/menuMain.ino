@@ -239,22 +239,6 @@ void menuUserProfiles()
                 if (LittleFS.exists(settingsFileName))
                     LittleFS.remove(settingsFileName);
 
-                // Remove profile from SD if available
-                if (online.microSD == true)
-                {
-                    if (USE_SPI_MICROSD)
-                    {
-                        if (sd->exists(settingsFileName))
-                            sd->remove(settingsFileName);
-                    }
-#ifdef COMPILE_SD_MMC
-                    else
-                    {
-                        if (SD_MMC.exists(settingsFileName))
-                            SD_MMC.remove(settingsFileName);
-                    }
-#endif // COMPILE_SD_MMC
-                }
 
                 recordProfileNumber(0); // Move to Profile1
                 profileNumber = 0;
@@ -264,10 +248,10 @@ void menuUserProfiles()
 
                 // We need to load these settings from file so that we can record a profile name change correctly
                 bool responseLFS = loadSystemSettingsFromFileLFS(settingsFileName, &settings);
-                bool responseSD = loadSystemSettingsFromFileSD(settingsFileName, &settings);
+
 
                 // If this is an empty/new profile slot, overwrite our current settings with defaults
-                if (responseLFS == false && responseSD == false)
+                if (responseLFS == false)
                 {
                     settingsToDefaults();
                 }
@@ -314,10 +298,10 @@ void changeProfileNumber(byte newProfileNumber)
 
     // We need to load these settings from file so that we can record a profile name change correctly
     bool responseLFS = loadSystemSettingsFromFileLFS(settingsFileName, &settings);
-    bool responseSD = loadSystemSettingsFromFileSD(settingsFileName, &settings);
+
 
     // If this is an empty/new profile slot, overwrite our current settings with defaults
-    if (responseLFS == false && responseSD == false)
+    if (responseLFS == false)
     {
         systemPrintln("No profile found: Applying default settings");
         settingsToDefaults();
@@ -330,45 +314,7 @@ void factoryReset(bool alreadyHasSemaphore)
 
     tasksStopUART2();
 
-    // Attempt to write to file system. This avoids collisions with file writing from other functions like
-    // recordSystemSettingsToFile() and F9PSerialReadTask() if (settings.enableSD && online.microSD)
-    //Don't check settings.enableSD - it could be corrupt
-    if (online.microSD)
-    {
-        if (alreadyHasSemaphore == true || xSemaphoreTake(sdCardSemaphore, fatSemaphore_longWait_ms) == pdPASS)
-        {
-            if (USE_SPI_MICROSD)
-            {
-                // Remove this specific settings file. Don't remove the other profiles.
-                sd->remove(settingsFileName);
-
-                sd->remove(stationCoordinateECEFFileName); // Remove station files
-                sd->remove(stationCoordinateGeodeticFileName);
-            }
-#ifdef COMPILE_SD_MMC
-            else
-            {
-                SD_MMC.remove(settingsFileName);
-
-                SD_MMC.remove(stationCoordinateECEFFileName); // Remove station files
-                SD_MMC.remove(stationCoordinateGeodeticFileName);
-            }
-#endif // COMPILE_SD_MMC
-
-            xSemaphoreGive(sdCardSemaphore);
-        } // End sdCardSemaphore
-        else
-        {
-            char semaphoreHolder[50];
-            getSemaphoreFunction(semaphoreHolder);
-
-            // An error occurs when a settings file is on the microSD card and it is not
-            // deleted, as such the settings on the microSD card will be loaded when the
-            // RTK reboots, resulting in failure to achieve the factory reset condition
-            log_d("sdCardSemaphore failed to yield, held by %s, menuMain.ino line %d\r\n", semaphoreHolder,
-                  __LINE__);
-        }
-    }
+    
 
     systemPrintln("Formatting internal file system...");
     LittleFS.format();

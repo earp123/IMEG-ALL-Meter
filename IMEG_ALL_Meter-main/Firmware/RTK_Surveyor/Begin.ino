@@ -201,18 +201,13 @@ void beginBoard()
 
 void endSD(bool alreadyHaveSemaphore, bool releaseSemaphore)
 {
-    // Disable logging
-    endLogging(alreadyHaveSemaphore, false);
+    
 
     // Done with the SD card
     if (online.microSD)
     {
         if (USE_SPI_MICROSD)
             sd->end();
-#ifdef COMPILE_SD_MMC
-        else
-            SD_MMC.end();
-#endif  // COMPILE_SD_MMC
 
         online.microSD = false;
         systemPrintln("microSD: Offline");
@@ -723,12 +718,14 @@ void beginSystemState()
 
     // Starts task for monitoring button presses
     if (ButtonCheckTaskHandle == nullptr)
+      {
         xTaskCreate(ButtonCheckTask,
                     "BtnCheck",          // Just for humans
                     buttonTaskStackSize, // Stack Size
                     nullptr,             // Task input parameter
                     ButtonCheckTaskPriority,
                     &ButtonCheckTaskHandle); // Task handle
+      }  
 }
 
 // Setup the timepulse output on the PPS pin for external triggering
@@ -869,33 +866,7 @@ void radioStart()
         espnowStart();
 }
 
-// Start task to determine SD card size
-void beginSDSizeCheckTask()
-{
-    if (sdSizeCheckTaskHandle == nullptr)
-    {
-        xTaskCreate(sdSizeCheckTask,         // Function to call
-                    "SDSizeCheck",           // Just for humans
-                    sdSizeCheckStackSize,    // Stack Size
-                    nullptr,                 // Task input parameter
-                    sdSizeCheckTaskPriority, // Priority
-                    &sdSizeCheckTaskHandle); // Task handle
 
-        log_d("sdSizeCheck Task started");
-    }
-}
-
-void deleteSDSizeCheckTask()
-{
-    // Delete task once it's complete
-    if (sdSizeCheckTaskHandle != nullptr)
-    {
-        vTaskDelete(sdSizeCheckTaskHandle);
-        sdSizeCheckTaskHandle = nullptr;
-        sdSizeCheckTaskComplete = false;
-        log_d("sdSizeCheck Task deleted");
-    }
-}
 
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Time Pulse ISR

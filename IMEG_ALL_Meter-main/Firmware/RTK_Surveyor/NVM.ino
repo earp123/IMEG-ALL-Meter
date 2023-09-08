@@ -24,7 +24,7 @@ void loadSettings()
     // Temp store any variables from LFS that should override SD
     int resetCount = settings.resetCount;
 
-    loadSystemSettingsFromFileSD(settingsFileName, &settings);
+
     settings.resetCount = resetCount;
 
     // Change empty profile name to 'Profile1' etc
@@ -67,97 +67,11 @@ void recordSystemSettings()
 {
     settings.sizeOfSettings = sizeof(settings); // Update to current setting size
 
-    recordSystemSettingsToFileSD(settingsFileName);  // Record to SD if available
+    
     recordSystemSettingsToFileLFS(settingsFileName); // Record to LFS if available
 }
 
-// Export the current settings to a config file on SD
-// We share the recording with LittleFS so this is all the semphore and SD specific handling
-void recordSystemSettingsToFileSD(char *fileName)
-{
-    bool gotSemaphore = false;
-    bool wasSdCardOnline;
 
-    // Try to gain access the SD card
-    wasSdCardOnline = online.microSD;
-    
-
-    while (online.microSD == true)
-    {
-        // Attempt to write to file system. This avoids collisions with file writing from other functions like
-        // updateLogs()
-        if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_longWait_ms) == pdPASS)
-        {
-            markSemaphore(FUNCTION_RECORDSETTINGS);
-
-            gotSemaphore = true;
-
-            if (USE_SPI_MICROSD)
-            {
-                if (sd->exists(fileName))
-                {
-                    log_d("Removing from SD: %s", fileName);
-                    sd->remove(fileName);
-                }
-
-                SdFile settingsFile; // FAT32
-                if (settingsFile.open(fileName, O_CREAT | O_APPEND | O_WRITE) == false)
-                {
-                    systemPrintln("Failed to create settings file");
-                    break;
-                }
-
-                updateDataFileCreate(&settingsFile); // Update the file to create time & date
-
-                recordSystemSettingsToFile((File *)&settingsFile); // Record all the settings via strings to file
-
-                updateDataFileAccess(&settingsFile); // Update the file access time & date
-
-                settingsFile.close();
-            }
-#ifdef COMPILE_SD_MMC
-            else
-            {
-                if (SD_MMC.exists(fileName))
-                {
-                    log_d("Removing from SD: %s", fileName);
-                    SD_MMC.remove(fileName);
-                }
-
-                File settingsFile = SD_MMC.open(fileName, FILE_WRITE);
-
-                if (!settingsFile)
-                {
-                    systemPrintln("Failed to create settings file");
-                    break;
-                }
-
-                recordSystemSettingsToFile(&settingsFile); // Record all the settings via strings to file
-
-                settingsFile.close();
-            }
-#endif  // COMPILE_SD_MMC
-
-            log_d("Settings recorded to SD: %s", fileName);
-        }
-        else
-        {
-            char semaphoreHolder[50];
-            getSemaphoreFunction(semaphoreHolder);
-
-            // This is an error because the current settings no longer match the settings
-            // on the microSD card, and will not be restored to the expected settings!
-            systemPrintf("sdCardSemaphore failed to yield, held by %s, NVM.ino line %d\r\n", semaphoreHolder, __LINE__);
-        }
-        break;
-    }
-
-    // Release access the SD card
-    if (online.microSD && (!wasSdCardOnline))
-        endSD(gotSemaphore, true);
-    else if (gotSemaphore)
-        xSemaphoreGive(sdCardSemaphore);
-}
 
 // Export the current settings to a config file on SD
 // We share the recording with LittleFS so this is all the semphore and SD specific handling
@@ -419,163 +333,7 @@ void recordSystemSettingsToFile(File *settingsFile)
     settingsFile->printf("%s=%d\r\n", "i2cInterruptsCore", settings.i2cInterruptsCore);
 }
 
-// Given a fileName, parse the file and load the given settings struct
-// Returns true if some settings were loaded from a file
-// Returns false if a file was not opened/loaded
-bool loadSystemSettingsFromFileSD(char *fileName, Settings *settings)
-{
-    bool gotSemaphore = false;
-    bool status = false;
-    bool wasSdCardOnline;
 
-    // Try to gain access the SD card
-    wasSdCardOnline = online.microSD;
-    
-
-    while (online.microSD == true)
-    {
-        // Attempt to access file system. This avoids collisions with file writing from other functions like
-        // recordSystemSettingsToFile() and F9PSerialReadTask()
-        if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_longWait_ms) == pdPASS)
-        {
-            markSemaphore(FUNCTION_LOADSETTINGS);
-
-            gotSemaphore = true;
-
-            if (USE_SPI_MICROSD)
-            {
-                if (!sd->exists(fileName))
-                {
-                    log_d("File %s not found", fileName);
-                    break;
-                }
-
-                SdFile settingsFile; // FAT32
-                if (settingsFile.open(fileName, O_READ) == false)
-                {
-                    systemPrintln("Failed to open settings file");
-                    break;
-                }
-
-                char line[60];
-                int lineNumber = 0;
-
-                while (settingsFile.available())
-                {
-                    // Get the next line from the file
-                    int n = settingsFile.fgets(line, sizeof(line));
-                    if (n <= 0)
-                    {
-                        systemPrintf("Failed to read line %d from settings file\r\n", lineNumber);
-                    }
-                    else if (line[n - 1] != '\n' && n == (sizeof(line) - 1))
-                    {
-                        systemPrintf("Settings line %d too long\r\n", lineNumber);
-                        if (lineNumber == 0)
-                        {
-                            // If we can't read the first line of the settings file, give up
-                            systemPrintln("Giving up on settings file");
-                            break;
-                        }
-                    }
-                    else if (parseLine(line, settings) == false)
-                    {
-                        systemPrintf("Failed to parse line %d: %s\r\n", lineNumber, line);
-                        if (lineNumber == 0)
-                        {
-                            // If we can't read the first line of the settings file, give up
-                            systemPrintln("Giving up on settings file");
-                            break;
-                        }
-                    }
-
-                    lineNumber++;
-                }
-
-                // systemPrintln("Config file read complete");
-                settingsFile.close();
-                status = true;
-                break;
-            }
-#ifdef COMPILE_SD_MMC
-            else
-            {
-                if (!SD_MMC.exists(fileName))
-                {
-                    log_d("File %s not found", fileName);
-                    break;
-                }
-
-                File settingsFile = SD_MMC.open(fileName, FILE_READ);
-
-                if (!settingsFile)
-                {
-                    systemPrintln("Failed to open settings file");
-                    break;
-                }
-
-                char line[60];
-                int lineNumber = 0;
-
-                while (settingsFile.available())
-                {
-                    // Get the next line from the file
-                    int n = getLine(&settingsFile, line, sizeof(line));
-                    if (n <= 0)
-                    {
-                        systemPrintf("Failed to read line %d from settings file\r\n", lineNumber);
-                    }
-                    else if (line[n - 1] != '\n' && n == (sizeof(line) - 1))
-                    {
-                        systemPrintf("Settings line %d too long\r\n", lineNumber);
-                        if (lineNumber == 0)
-                        {
-                            // If we can't read the first line of the settings file, give up
-                            systemPrintln("Giving up on settings file");
-                            break;
-                        }
-                    }
-                    else if (parseLine(line, settings) == false)
-                    {
-                        systemPrintf("Failed to parse line %d: %s\r\n", lineNumber, line);
-                        if (lineNumber == 0)
-                        {
-                            // If we can't read the first line of the settings file, give up
-                            systemPrintln("Giving up on settings file");
-                            break;
-                        }
-                    }
-
-                    lineNumber++;
-                }
-
-                // systemPrintln("Config file read complete");
-                settingsFile.close();
-                status = true;
-                break;
-            }
-#endif  // COMPILE_SD_MMC
-        } // End Semaphore check
-        else
-        {
-            // This is an error because if the settings exist on the microSD card that
-            // those settings are not overriding the current settings as documented!
-            systemPrintf("sdCardSemaphore failed to yield, NVM.ino line %d\r\n", __LINE__);
-        }
-        break;
-    } // End SD online
-
-    if (online.microSD != true)
-        log_d("Config file read failed: SD offline");
-
-    // Release access the SD card
-    if (online.microSD && (!wasSdCardOnline))
-        endSD(gotSemaphore, true);
-    else if (gotSemaphore)
-        xSemaphoreGive(sdCardSemaphore);
-
-    return status;
-}
 
 // Given a fileName, parse the file and load the given settings struct
 // Returns true if some settings were loaded from a file
@@ -1551,16 +1309,16 @@ bool getProfileName(char *fileName, char *profileName, uint8_t profileNameLength
 
     // If we have a profile in both LFS and SD, SD wins
     bool responseLFS = loadSystemSettingsFromFileLFS(fileName, tempSettings);
-    bool responseSD = loadSystemSettingsFromFileSD(fileName, tempSettings);
+
 
     // Zero terminate the profile name
     *profileName = 0;
-    if (responseLFS == true || responseSD == true)
+    if (responseLFS == true)
         snprintf(profileName, profileNameLength, "%s", tempSettings->profileName); // snprintf handles null terminator
 
     delete tempSettings;
 
-    return (responseLFS | responseSD);
+    return (responseLFS);
 }
 
 // Loads a given profile name.

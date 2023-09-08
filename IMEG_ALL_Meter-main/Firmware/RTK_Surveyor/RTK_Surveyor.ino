@@ -146,11 +146,11 @@ unsigned long syncRTCInterval = 1000; // To begin, sync RTC every second. Interv
 #include "SdFat.h" //http://librarymanager/All#sdfat_exfat by Bill Greiman. Currently uses v2.1.1
 SdFat *sd;
 
-#include "FileSdFatMMC.h" //Hybrid SdFat and SD_MMC file access
+
 
 char platformFilePrefix[40] = "SFE_Surveyor"; // Sets the prefix for logs and settings files
 
-FileSdFatMMC *ubxFile;                // File that all GNSS ubx messages sentences are written to
+
 unsigned long lastUBXLogSyncTime = 0; // Used to record to SD every half second
 int startLogTime_minutes = 0;         // Mark when we start any logging so we can stop logging after maxLogTime_minutes
 int startCurrentLogTime_minutes =
@@ -179,7 +179,7 @@ typedef enum LoggingType
 } LoggingType;
 LoggingType loggingType = LOGGING_UNKNOWN;
 
-FileSdFatMMC *managerTempFile; // File used for uploading or downloading in file manager section of AP config
+
 bool managerFileOpen = false;
 
 TaskHandle_t sdSizeCheckTaskHandle = nullptr; // Store handles so that we can kill the task once size is found
@@ -794,7 +794,7 @@ void setup()
 
     beginBoard(); // Now finish settup up the board and check the on button
 
-    loadSettings(); // Attempt to load settings after SD is started so we can read the settings file if available
+    //loadSettings(); // Attempt to load settings after SD is started so we can read the settings file if available
 
     beginIdleTasks(); // Enable processor load calculations
 
@@ -832,8 +832,6 @@ void loop()
 
     updateRTC(); // Set system time to GNSS once we have fix
 
-    //updateLogs(); // Record any new data. Create or close files as needed.
-
     reportHeap(); // If debug enabled, report free heap
 
     updateSerial(); // Menu system via ESP32 USB connection
@@ -868,149 +866,6 @@ void updateLogs()
     if (online.microSD == false)
         return; // We can't log if there is no SD
 
-    if (outOfSDSpace == true)
-        return; // We can't log if we are out of SD space
-
-    if (online.logging == false && settings.enableLogging == true)
-    {
-        beginLogging();
-
-        setLoggingType(); // Determine if we are standard, PPP, or custom. Changes logging icon accordingly.
-    }
-    else if (online.logging == true && settings.enableLogging == false)
-    {
-        // Close down file
-        endSD(false, true);
-    }
-    else if (online.logging == true && settings.enableLogging == true &&
-             (systemTime_minutes - startCurrentLogTime_minutes) >= settings.maxLogLength_minutes)
-    {
-        if (settings.runLogTest == false)
-            endSD(false, true); // Close down file. A new one will be created at the next calling of updateLogs().
-        else if (settings.runLogTest == true)
-            updateLogTest();
-    }
-
-    if (online.logging == true)
-    {
-        // Record any pending trigger events
-        if (newEventToRecord == true)
-        {
-            systemPrintln("Recording event");
-
-            // Record trigger count with Time Of Week of rising edge (ms), Millisecond fraction of Time Of Week of
-            // rising edge (ns), and accuracy estimate (ns)
-            char eventData[82]; // Max NMEA sentence length is 82
-            snprintf(eventData, sizeof(eventData), "%d,%d,%d,%d", triggerCount, triggerTowMsR, triggerTowSubMsR,
-                     triggerAccEst);
-
-            char nmeaMessage[82]; // Max NMEA sentence length is 82
-            createNMEASentence(CUSTOM_NMEA_TYPE_EVENT, nmeaMessage, sizeof(nmeaMessage),
-                               eventData); // textID, buffer, sizeOfBuffer, text
-
-            if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_shortWait_ms) == pdPASS)
-            {
-                markSemaphore(FUNCTION_EVENT);
-
-                ubxFile->println(nmeaMessage);
-
-                xSemaphoreGive(sdCardSemaphore);
-                newEventToRecord = false;
-            }
-            else
-            {
-                char semaphoreHolder[50];
-                getSemaphoreFunction(semaphoreHolder);
-
-                // While a retry does occur during the next loop, it is possible to loose
-                // trigger events if they occur too rapidly or if the log file is closed
-                // before the trigger event is written!
-                log_w("sdCardSemaphore failed to yield, held by %s, RTK_Surveyor.ino line %d", semaphoreHolder,
-                      __LINE__);
-            }
-        }
-
-        // Record the Antenna Reference Position - if available
-        if (newARPAvailable == true && settings.enableARPLogging &&
-            ((millis() - lastARPLog) > (settings.ARPLoggingInterval_s * 1000)))
-        {
-            systemPrintln("Recording Antenna Reference Position");
-
-            lastARPLog = millis();
-            newARPAvailable = false;
-
-            double x = ARPECEFX;
-            x /= 10000.0; // Convert to m
-            double y = ARPECEFY;
-            y /= 10000.0; // Convert to m
-            double z = ARPECEFZ;
-            z /= 10000.0; // Convert to m
-            double h = ARPECEFH;
-            h /= 10000.0;     // Convert to m
-            char ARPData[82]; // Max NMEA sentence length is 82
-            snprintf(ARPData, sizeof(ARPData), "%.4f,%.4f,%.4f,%.4f", x, y, z, h);
-
-            char nmeaMessage[82]; // Max NMEA sentence length is 82
-            createNMEASentence(CUSTOM_NMEA_TYPE_ARP_ECEF_XYZH, nmeaMessage, sizeof(nmeaMessage),
-                               ARPData); // textID, buffer, sizeOfBuffer, text
-
-            if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_shortWait_ms) == pdPASS)
-            {
-                markSemaphore(FUNCTION_EVENT);
-
-                ubxFile->println(nmeaMessage);
-
-                xSemaphoreGive(sdCardSemaphore);
-                newEventToRecord = false;
-            }
-            else
-            {
-                char semaphoreHolder[50];
-                getSemaphoreFunction(semaphoreHolder);
-                log_w("sdCardSemaphore failed to yield, held by %s, RTK_Surveyor.ino line %d", semaphoreHolder,
-                      __LINE__);
-            }
-        }
-
-        // Report file sizes to show recording is working
-        if ((millis() - lastFileReport) > 5000)
-        {
-            if (fileSize > 0)
-            {
-                lastFileReport = millis();
-                if (settings.enablePrintLogFileStatus)
-                {
-                    systemPrintf("Log file size: %ld", fileSize);
-
-                    if ((systemTime_minutes - startLogTime_minutes) < settings.maxLogTime_minutes)
-                    {
-                        // Calculate generation and write speeds every 5 seconds
-                        uint32_t fileSizeDelta = fileSize - lastLogSize;
-                        systemPrintf(" - Generation rate: %0.1fkB/s", fileSizeDelta / 5.0 / 1000.0);
-                    }
-                    else
-                    {
-                        systemPrintf(" reached max log time %d", settings.maxLogTime_minutes);
-                    }
-
-                    systemPrintln();
-                }
-
-                if (fileSize > lastLogSize)
-                {
-                    lastLogSize = fileSize;
-                    logIncreasing = true;
-                }
-                else
-                {
-                    log_d("No increase in file size");
-                    logIncreasing = false;
-
-                    endSD(false, true); // alreadyHaveSemaphore, releaseSemaphore
-                }
-            }
-        }
-    }
 }
 
 // Once we have a fix, sync system clock to GNSS
@@ -1060,8 +915,7 @@ void updateRTC()
                     systemPrint("System time set to: ");
                     systemPrintln(rtc.getDateTime(true));
 
-                    recordSystemSettingsToFileSD(
-                        settingsFileName); // This will re-record the setting file with current date/time.
+                    
                 }
                 else
                 {

@@ -61,8 +61,7 @@ void startWebServer(bool startWiFi, int httpPort)
 
     webserver->onNotFound(notFound);
 
-    webserver->onFileUpload(
-        handleUpload); // Run handleUpload function when any file is uploaded. Must be before server.on() calls.
+    
 
     webserver->on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html, sizeof(index_html));
@@ -221,7 +220,6 @@ void startWebServer(bool startWiFi, int httpPort)
         String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
         systemPrintln(logmessage);
         String files;
-        getFileList(files);
         request->send(200, "text/plain", files);
     });
 
@@ -327,12 +325,7 @@ static void handleFileManager(AsyncWebServerRequest *request)
         {
             fileExists = sd->exists(slashFileName);
         }
-#ifdef COMPILE_SD_MMC
-        else
-        {
-            fileExists = SD_MMC.exists(slashFileName);
-        }
-#endif  // COMPILE_SD_MMC
+
 
         if (fileExists == false)
         {
@@ -341,84 +334,7 @@ static void handleFileManager(AsyncWebServerRequest *request)
         }
         else
         {
-            systemPrintln(logmessage + " file exists");
-
-            if (strcmp(fileAction, "download") == 0)
-            {
-                logmessage += " downloaded";
-
-                if (managerFileOpen == false)
-                {
-                    // Allocate the managerTempFile
-                    if (!managerTempFile)
-                    {
-                        managerTempFile = new FileSdFatMMC;
-                        if (!managerTempFile)
-                        {
-                            systemPrintln("Failed to allocate managerTempFile!");
-                            return;
-                        }
-                    }
-
-                    if (managerTempFile->open(slashFileName, O_READ) == true)
-                        managerFileOpen = true;
-                    else
-                        systemPrintln("Error: File Manager failed to open file");
-                }
-                else
-                {
-                    // File is already in use. Wait your turn.
-                    request->send(202, "text/plain", "ERROR: File already downloading");
-                }
-
-                int dataAvailable;
-                dataAvailable = managerTempFile->size() - managerTempFile->position();
-
-                AsyncWebServerResponse *response = request->beginResponse(
-                    "text/plain", dataAvailable, [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-                        uint32_t bytes = 0;
-                        uint32_t availableBytes;
-                        availableBytes = managerTempFile->available();
-
-                        if (availableBytes > maxLen)
-                        {
-                            bytes = managerTempFile->read(buffer, maxLen);
-                        }
-                        else
-                        {
-                            bytes = managerTempFile->read(buffer, availableBytes);
-                            managerTempFile->close();
-
-                            managerFileOpen = false;
-
-                            websocket->textAll("fmNext,1,"); // Tell browser to send next file if needed
-                        }
-
-                        return bytes;
-                    });
-
-                response->addHeader("Cache-Control", "no-cache");
-                response->addHeader("Content-Disposition", "attachment; filename=" + String(fileName));
-                response->addHeader("Access-Control-Allow-Origin", "*");
-                request->send(response);
-            }
-            else if (strcmp(fileAction, "delete") == 0)
-            {
-                logmessage += " deleted";
-                if (USE_SPI_MICROSD)
-                    sd->remove(slashFileName);
-#ifdef COMPILE_SD_MMC
-                else
-                    SD_MMC.remove(slashFileName);
-#endif  // COMPILE_SD_MMC
-                request->send(200, "text/plain", "Deleted File: " + String(fileName));
-            }
-            else
-            {
-                logmessage += " ERROR: invalid action param supplied";
-                request->send(400, "text/plain", "ERROR: invalid action param supplied");
-            }
-            systemPrintln(logmessage);
+            systemPrintln("Not supported ~SWR");
         }
     }
     else
@@ -1253,18 +1169,7 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
     {
     }
 
-    // Special actions
-    else if (strcmp(settingName, "firmwareFileName") == 0)
-    {
-        mountSDThenUpdate(settingValueStr);
 
-        // If update is successful, it will force system reset and not get here.
-
-        if (productVariant == REFERENCE_STATION)
-            requestChangeState(STATE_BASE_NOT_STARTED); // If update failed, return to Base mode.
-        else
-            requestChangeState(STATE_ROVER_NOT_STARTED); // If update failed, return to Rover mode.
-    }
     else if (strcmp(settingName, "factoryDefaultReset") == 0)
         factoryReset(false); //We do not have the sdSemaphore
     else if (strcmp(settingName, "exitAndReset") == 0)
@@ -1346,20 +1251,7 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
             espnowRemovePeer(settings.espnowPeers[x]);
         settings.espnowPeerCount = 0;
     }
-    else if (strcmp(settingName, "startNewLog") == 0)
-    {
-        if (settings.enableLogging == true && online.logging == true)
-        {
-            endLogging(false, true); //(gotSemaphore, releaseSemaphore) Close file. Reset parser stats.
-            beginLogging();          // Create new file based on current RTC.
-            setLoggingType();        // Determine if we are standard, PPP, or custom. Changes logging icon accordingly.
-
-            char newFileNameCSV[sizeof("logFileName,") + sizeof(logFileName) + 1];
-            snprintf(newFileNameCSV, sizeof(newFileNameCSV), "logFileName,%s,", logFileName);
-
-            websocket->textAll(newFileNameCSV); // Tell the config page the name of the file we just created
-        }
-    }
+    
     else if (strcmp(settingName, "checkNewFirmware") == 0)
     {
         log_d("Checking for new OTA Pull firmware");
@@ -1618,94 +1510,7 @@ bool parseIncomingSettings()
     return (true);
 }
 
-// When called, responds with the root folder list of files on SD card
-// Name and size are formatted in CSV, formatted to html by JS
-void getFileList(String &returnText)
-{
-    returnText = "";
 
-    // Update the SD Size and Free Space
-    String cardSize;
-    stringHumanReadableSize(cardSize, sdCardSize);
-    returnText += "sdSize," + cardSize + ",";
-    String freeSpace;
-    stringHumanReadableSize(freeSpace, sdFreeSpace);
-    returnText += "sdFreeSpace," + freeSpace + ",";
-
-    char fileName[50]; // Handle long file names
-
-    // Attempt to gain access to the SD card
-    if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_longWait_ms) == pdPASS)
-    {
-        markSemaphore(FUNCTION_FILEMANAGER_UPLOAD1);
-
-        if (USE_SPI_MICROSD)
-        {
-            SdFile root;
-            root.open("/"); // Open root
-            SdFile file;
-            uint16_t fileCount = 0;
-
-            while (file.openNext(&root, O_READ))
-            {
-                if (file.isFile())
-                {
-                    fileCount++;
-
-                    file.getName(fileName, sizeof(fileName));
-
-                    String fileSize;
-                    stringHumanReadableSize(fileSize, file.fileSize());
-                    returnText += "fmName," + String(fileName) + ",fmSize," + fileSize + ",";
-                }
-            }
-
-            root.close();
-            file.close();
-        }
-#ifdef COMPILE_SD_MMC
-        else
-        {
-            File root = SD_MMC.open("/"); // Open root
-
-            if (root && root.isDirectory())
-            {
-                uint16_t fileCount = 0;
-
-                File file = root.openNextFile();
-                while (file)
-                {
-                    if (!file.isDirectory())
-                    {
-                        fileCount++;
-
-                        String fileSize;
-                        stringHumanReadableSize(fileSize, file.size());
-                        returnText += "fmName," + String(file.name()) + ",fmSize," + fileSize + ",";
-                    }
-
-                    file = root.openNextFile();
-                }
-            }
-
-            root.close();
-        }
-#endif  // COMPILE_SD_MMC
-
-        xSemaphoreGive(sdCardSemaphore);
-    }
-    else
-    {
-        char semaphoreHolder[50];
-        getSemaphoreFunction(semaphoreHolder);
-
-        // This is an error because the current settings no longer match the settings
-        // on the microSD card, and will not be restored to the expected settings!
-        systemPrintf("sdCardSemaphore failed to yield, held by %s, Form.ino line %d\r\n", semaphoreHolder, __LINE__);
-    }
-
-    log_d("returnText (%d bytes): %s\r\n", returnText.length(), returnText.c_str());
-}
 
 // When called, responds with the messages supported on this platform
 // Message name and current rate are formatted in CSV, formatted to html by JS
@@ -1778,79 +1583,4 @@ void stringHumanReadableSize(String &returnText, uint64_t bytes)
     returnText = String(readableSize);
 }
 
-#ifdef COMPILE_WIFI
-#ifdef COMPILE_AP
 
-// Handles uploading of user files to SD
-void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final)
-{
-    String logmessage = "";
-
-    if (!index)
-    {
-        logmessage = "Upload Start: " + String(filename);
-
-        int fileNameLen = filename.length();
-        char tempFileName[fileNameLen + 2] = {'/'}; // Filename must start with / or VERY bad things happen on SD_MMC
-        filename.toCharArray(&tempFileName[1], fileNameLen + 1);
-        tempFileName[fileNameLen + 1] = '\0'; // Terminate array
-
-        // Allocate the managerTempFile
-        if (!managerTempFile)
-        {
-            managerTempFile = new FileSdFatMMC;
-            if (!managerTempFile)
-            {
-                systemPrintln("Failed to allocate managerTempFile!");
-                return;
-            }
-        }
-        // Attempt to gain access to the SD card
-        if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_longWait_ms) == pdPASS)
-        {
-            markSemaphore(FUNCTION_FILEMANAGER_UPLOAD1);
-
-            managerTempFile->open(tempFileName, O_CREAT | O_APPEND | O_WRITE);
-
-            xSemaphoreGive(sdCardSemaphore);
-        }
-
-        systemPrintln(logmessage);
-    }
-
-    if (len)
-    {
-        // Attempt to gain access to the SD card
-        if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_longWait_ms) == pdPASS)
-        {
-            markSemaphore(FUNCTION_FILEMANAGER_UPLOAD2);
-
-            managerTempFile->write(data, len); // stream the incoming chunk to the opened file
-
-            xSemaphoreGive(sdCardSemaphore);
-        }
-    }
-
-    if (final)
-    {
-        logmessage = "Upload Complete: " + String(filename) + ",size: " + String(index + len);
-
-        // Attempt to gain access to the SD card
-        if (xSemaphoreTake(sdCardSemaphore, fatSemaphore_longWait_ms) == pdPASS)
-        {
-            markSemaphore(FUNCTION_FILEMANAGER_UPLOAD3);
-
-            managerTempFile->updateFileCreateTimestamp(); // Update the file create time & date
-
-            managerTempFile->close();
-
-            xSemaphoreGive(sdCardSemaphore);
-        }
-
-        systemPrintln(logmessage);
-        request->redirect("/");
-    }
-}
-
-#endif  // COMPILE_AP
-#endif  // COMPILE_WIFI
