@@ -178,10 +178,7 @@ void feedWdt()
 
 // Read bytes from ZED-F9P UART1 into ESP32 circular buffer
 // If data is coming in at 230,400bps = 23,040 bytes/s = one byte every 0.043ms
-// If SD blocks for 150ms (not extraordinary) that is 3,488 bytes that must be buffered
-// The ESP32 Arduino FIFO is ~120 bytes by default but overridden to 50 bytes (see pinUART2Task() and
-// uart_set_rx_full_threshold()). We use this task to harvest from FIFO into circular buffer during SD write blocking
-// time.
+
 void gnssReadTask(void *e)
 {
     static PARSE_STATE parse = {waitForPreamble, processUart1Message, "Log"};
