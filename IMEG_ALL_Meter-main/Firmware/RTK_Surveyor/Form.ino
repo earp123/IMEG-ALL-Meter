@@ -673,20 +673,8 @@ void createSettingsString(char *newSettings)
 
     // System state at power on. Convert various system states to either Rover or Base or NTP.
     int lastState; // 0 = Rover, 1 = Base, 2 = NTP
-    if (productVariant == REFERENCE_STATION)
-    {
-        lastState = 1; // Default Base
-        if (settings.lastState >= STATE_ROVER_NOT_STARTED && settings.lastState <= STATE_ROVER_RTK_FIX)
-            lastState = 0;
-        if (settings.lastState >= STATE_NTPSERVER_NOT_STARTED && settings.lastState <= STATE_NTPSERVER_SYNC)
-            lastState = 2;
-    }
-    else
-    {
-        lastState = 0; // Default Rover
-        if (settings.lastState >= STATE_BASE_NOT_STARTED && settings.lastState <= STATE_BASE_FIXED_TRANSMITTING)
-            lastState = 1;
-    }
+    lastState = 0; // Default Rover
+
     stringRecord(newSettings, "baseRoverSetup", lastState);
 
     // Bluetooth radio type
@@ -1036,8 +1024,6 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
     {
         // 0 = Rover, 1 = Base, 2 = NTP
         settings.lastState = STATE_ROVER_NOT_STARTED; // Default
-        if (settingValue == 1)
-            settings.lastState = STATE_BASE_NOT_STARTED;
         if (settingValue == 2)
             settings.lastState = STATE_NTPSERVER_NOT_STARTED;
     }
@@ -1194,8 +1180,8 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
             //(If the settings have been saved, then the code will restart in NTP, Base or Rover mode as desired.)
             if (settings.lastState == STATE_CONFIG_VIA_ETH_STARTED)
             {
-                systemPrintln("Settings were not saved. Resetting into Base mode.");
-                settings.lastState = STATE_BASE_NOT_STARTED;
+                systemPrintln("Settings were not saved. Resetting into Rover mode.");
+                settings.lastState = STATE_ROVER_NOT_STARTED;
                 recordSystemSettings();
             }
         }

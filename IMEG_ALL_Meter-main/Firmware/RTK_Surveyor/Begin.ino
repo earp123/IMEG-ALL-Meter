@@ -632,8 +632,6 @@ void beginFuelGauge()
     }
 }
 
-
-
 // Depending on platform and previous power down state, set system state
 void beginSystemState()
 {
@@ -643,89 +641,14 @@ void beginSystemState()
         factoryReset(false); //We do not have the SD semaphore
     }
 
-    if (productVariant == RTK_SURVEYOR)
-    {
-        if (settings.lastState == STATE_NOT_SET) // Default
+    if (settings.lastState == STATE_NOT_SET) // Default
         {
             systemState = STATE_ROVER_NOT_STARTED;
             settings.lastState = systemState;
         }
 
-        // If the rocker switch was moved while off, force module settings
-        // When switch is set to '1' = BASE, pin will be shorted to ground
-        if (settings.lastState == STATE_ROVER_NOT_STARTED && digitalRead(pin_setupButton) == LOW)
-            settings.updateZEDSettings = true;
-        else if (settings.lastState == STATE_BASE_NOT_STARTED && digitalRead(pin_setupButton) == HIGH)
-            settings.updateZEDSettings = true;
-
-        systemState = STATE_ROVER_NOT_STARTED; // Assume Rover. ButtonCheckTask() will correct as needed.
-
-        setupBtn = new Button(pin_setupButton); // Create the button in memory
-    }
-    else if (productVariant == RTK_EXPRESS || productVariant == RTK_EXPRESS_PLUS)
-    {
-        if (settings.lastState == STATE_NOT_SET) // Default
-        {
-            systemState = STATE_ROVER_NOT_STARTED;
-            settings.lastState = systemState;
-        }
-
-        if (online.lband == false)
-            systemState =
-                settings
-                    .lastState; // Return to either Rover or Base Not Started. The last state previous to power down.
-        else
-            systemState = STATE_KEYS_STARTED; // Begin process for getting new keys
-
-        setupBtn = new Button(pin_setupButton);          // Create the button in memory
-        powerBtn = new Button(pin_powerSenseAndControl); // Create the button in memory
-    }
-    else if (productVariant == RTK_FACET || productVariant == RTK_FACET_LBAND)
-    {
-        if (settings.lastState == STATE_NOT_SET) // Default
-        {
-            systemState = STATE_ROVER_NOT_STARTED;
-            settings.lastState = systemState;
-        }
-
-        if (online.lband == false)
-            systemState =
-                settings
-                    .lastState; // Return to either Rover or Base Not Started. The last state previous to power down.
-        else
-            systemState = STATE_KEYS_STARTED; // Begin process for getting new keys
-
-        firstRoverStart = true; // Allow user to enter test screen during first rover start
-        if (systemState == STATE_BASE_NOT_STARTED)
-            firstRoverStart = false;
-
-        powerBtn = new Button(pin_powerSenseAndControl); // Create the button in memory
-    }
-    else if (productVariant == REFERENCE_STATION)
-    {
-        if (settings.lastState == STATE_NOT_SET) // Default
-        {
-            systemState = STATE_BASE_NOT_STARTED;
-            settings.lastState = systemState;
-        }
-
-        systemState =
-            settings
-                .lastState; // Return to either NTP, Base or Rover Not Started. The last state previous to power down.
-
-        setupBtn = new Button(pin_setupButton); // Create the button in memory
-    }
-
-    // Starts task for monitoring button presses
-    if (ButtonCheckTaskHandle == nullptr)
-      {
-        xTaskCreate(ButtonCheckTask,
-                    "BtnCheck",          // Just for humans
-                    buttonTaskStackSize, // Stack Size
-                    nullptr,             // Task input parameter
-                    ButtonCheckTaskPriority,
-                    &ButtonCheckTaskHandle); // Task handle
-      }  
+        systemState = settings.lastState; // Return to either Rover or Base Not Started. The last state previous to power down.
+        
 }
 
 // Setup the timepulse output on the PPS pin for external triggering

@@ -177,11 +177,8 @@ bool wifiStartAP()
         }
         if (x == maxTries)
         {
-            if (productVariant == REFERENCE_STATION)
-                requestChangeState(STATE_BASE_NOT_STARTED); // If WiFi failed, return to Base mode.
-            else
-                requestChangeState(STATE_ROVER_NOT_STARTED); // If WiFi failed, return to Rover mode.
-            return (false);
+          requestChangeState(STATE_ROVER_NOT_STARTED); // If WiFi failed, return to Rover mode.
+          return (false);
         }
     }
 
@@ -480,14 +477,8 @@ bool wifiIsNeeded()
     if (systemState <= STATE_ROVER_RTK_FIX && settings.enableNtripClient == true)
         needed = true;
 
-    if (systemState >= STATE_BASE_NOT_STARTED && systemState <= STATE_BASE_FIXED_TRANSMITTING &&
-        settings.enableNtripServer == true)
-        needed = true;
 
-    // If the user has enabled NTRIP Client for an Assisted Survey-In, and Survey-In is running, keep WiFi on.
-    if (systemState >= STATE_BASE_NOT_STARTED && systemState <= STATE_BASE_TEMP_SURVEY_STARTED &&
-        settings.enableNtripClient == true && settings.fixedBase == false)
-        needed = true;
+
 
     // If WiFi is on while we are in the following states, allow WiFi to continue to operate
     if (systemState >= STATE_BUBBLE_LEVEL && systemState <= STATE_PROFILE)
@@ -496,10 +487,7 @@ bool wifiIsNeeded()
         needed = true;
     }
 
-    if (systemState == STATE_KEYS_WIFI_STARTED || systemState == STATE_KEYS_WIFI_CONNECTED)
-        needed = true;
-    if (systemState == STATE_KEYS_PROVISION_WIFI_STARTED || systemState == STATE_KEYS_PROVISION_WIFI_CONNECTED)
-        needed = true;
+
 
     return needed;
 }

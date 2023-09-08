@@ -177,57 +177,6 @@ void menuSystem()
                          uptimeSeconds, uptimeMilliseconds, ntripClientConnectionAttemptsTotal);
         }
 
-        // Display NTRIP Server status and uptime
-        if (settings.enableNtripServer == true &&
-            (systemState >= STATE_BASE_NOT_STARTED && systemState <= STATE_BASE_FIXED_TRANSMITTING))
-        {
-            systemPrint("NTRIP Server ");
-            switch (ntripServerState)
-            {
-            case NTRIP_SERVER_OFF:
-                systemPrint("Disconnected");
-                break;
-            case NTRIP_SERVER_ON:
-            case NTRIP_SERVER_NETWORK_STARTED:
-            case NTRIP_SERVER_NETWORK_CONNECTED:
-            case NTRIP_SERVER_WAIT_GNSS_DATA:
-            case NTRIP_SERVER_CONNECTING:
-            case NTRIP_SERVER_AUTHORIZATION:
-                systemPrint("Connecting");
-                break;
-            case NTRIP_SERVER_CASTING:
-                systemPrint("Connected");
-                break;
-            default:
-                systemPrintf("Unknown: %d", ntripServerState);
-                break;
-            }
-            systemPrintf(" - %s/%s:%d", settings.ntripServer_CasterHost, settings.ntripServer_MountPoint,
-                         settings.ntripServer_CasterPort);
-
-            uptimeMilliseconds = ntripServerTimer - ntripServerStartTime;
-
-            uptimeDays = uptimeMilliseconds / MILLISECONDS_IN_A_DAY;
-            uptimeMilliseconds %= MILLISECONDS_IN_A_DAY;
-
-            uptimeHours = uptimeMilliseconds / MILLISECONDS_IN_AN_HOUR;
-            uptimeMilliseconds %= MILLISECONDS_IN_AN_HOUR;
-
-            uptimeMinutes = uptimeMilliseconds / MILLISECONDS_IN_A_MINUTE;
-            uptimeMilliseconds %= MILLISECONDS_IN_A_MINUTE;
-
-            uptimeSeconds = uptimeMilliseconds / MILLISECONDS_IN_A_SECOND;
-            uptimeMilliseconds %= MILLISECONDS_IN_A_SECOND;
-
-            systemPrint(" Uptime: ");
-            systemPrintf("%d %02d:%02d:%02d.%03lld (Reconnects: %d)\r\n", uptimeDays, uptimeHours, uptimeMinutes,
-                         uptimeSeconds, uptimeMilliseconds, ntripServerConnectionAttemptsTotal);
-        }
-
-        if (settings.enableSD == true && online.microSD == true)
-        {
-            systemPrintln("f) Display microSD Files");
-        }
 
         systemPrint("e) Echo User Input: ");
         if (settings.echoUserInput == true)
@@ -313,12 +262,11 @@ void menuSystem()
         {
             // Restart Bluetooth
             bluetoothStop();
-            if (settings.bluetoothRadioType == BLUETOOTH_RADIO_SPP)
+            if (settings.bluetoothRadioType == BLUETOOTH_RADIO_OFF)
                 settings.bluetoothRadioType = BLUETOOTH_RADIO_BLE;
             else if (settings.bluetoothRadioType == BLUETOOTH_RADIO_BLE)
                 settings.bluetoothRadioType = BLUETOOTH_RADIO_OFF;
-            else if (settings.bluetoothRadioType == BLUETOOTH_RADIO_OFF)
-                settings.bluetoothRadioType = BLUETOOTH_RADIO_SPP;
+            
             bluetoothStart();
         }
         else if (incoming == 'r')
@@ -334,11 +282,6 @@ void menuSystem()
         }
 
         // Support mode switching
-        else if (incoming == 'B')
-        {
-            forceSystemStateUpdate = true; // Imediately go to this new state
-            changeState(STATE_BASE_NOT_STARTED);
-        }
         else if (incoming == 'R')
         {
             forceSystemStateUpdate = true; // Imediately go to this new state

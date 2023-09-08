@@ -337,10 +337,6 @@ bool ntripClientIsNeeded()
     if (wifiInConfigMode())
         return (false); // Do not service NTRIP during network config
 
-    // Allow NTRIP Client to run during Survey-In,
-    // but do not allow NTRIP Client to run during Base
-    if (systemState == STATE_BASE_TEMP_TRANSMITTING)
-        return (false);
 
     return (true);
 }
