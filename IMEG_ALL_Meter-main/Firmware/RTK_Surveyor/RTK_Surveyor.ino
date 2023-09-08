@@ -687,6 +687,9 @@ int lbandRestarts = 0;
 unsigned long lbandTimeToFix = 0;
 unsigned long lbandLastReport = 0;
 
+#include "Adafruit_VEML7700.h"
+Adafruit_VEML7700 veml = Adafruit_VEML7700();
+
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 /*
                      +---------------------------------------+      +----------+
@@ -698,16 +701,16 @@ unsigned long lbandLastReport = 0;
   | NMEA + RTCM |<---|<--|           |<-------+-|        |<--|<-----|RXD, MOSI |<----'
   +-------------+    |   '-----------'        | '--------'   |28  43|          |
                      |                        |              |      |          |
-      .---------+    |                        |              |      |          |
-     / uSD Card |    |                        |              |      |          |
-    /           |    |   .----.               V              |      |          |
-   |   Log File |<---|<--|    |<--------------+              |      |          |47
-   |            |    |   |    |               |              |      |    D_SEL |<---- N/C (1)
-   |  Profile # |<-->|<->| SD |<--> Profile   |              |      | 0 = SPI  |
-   |            |    |   |    |               |              |      | 1 = I2C  |
-   |  Settings  |<-->|<->|    |<--> Settings  |              |      |    UART1 |
-   |            |    |   '----'               |              |      |          |
-   +------------+    |                        |              |      |          |
+                     |                        |              |      |          |
+                     |                        |              |      |          |
+                     |                        |              |      |          |
+                     |                        |              |      |          |47
+                     |                        |              |      |    D_SEL |<---- N/C (1)
+                     |                        |              |      | 0 = SPI  |
+                     |                        |              |      | 1 = I2C  |
+                     |                        |              |      |    UART1 |
+                     |                        |              |      |          |
+                     |                        |              |      |          |
                      |   .--------.           |              |      |          |
                      |   |        |<----------'              |      |          |
                      |   |  USB   |                          |      |          |
@@ -734,30 +737,6 @@ unsigned long lbandLastReport = 0;
                      |                             '-----'   |      +----------+
                      |                                       |
                      +---------------------------------------+
-                                  26|   |24   A B
-                                    |   |     0 0 = X0, Y0
-                                    V   V     0 1 = X1, Y1
-                                  +-------+   1 0 = X2, Y2
-                                  | B   A |   1 1 = X3, Y3
-                                  |       |
-                                  |     X0|<--- GNSS UART1 TXD
-                                  |       |
-                                  |     X1|<--- GNSS PPS STAT
-                            3 <---|X      |
-                                  |     X2|<--- SCL
-                                  |       |
-                                  |     X3|<--- DAC2
-                   Data Port      |       |
-                                  |     Y0|----> ZED UART1 RXD
-                                  |       |
-                                  |     Y1|<--> ZED EXT INT
-                            2 <-->|Y      |
-                                  |     Y2|---> SDA
-                                  |       |
-                                  |     Y3|---> ADC39
-                                  |       |
-                                  |  MUX  |
-                                  +-------+
 */
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Initialize any globals that can't easily be given default values
@@ -794,8 +773,6 @@ void setup()
 
     beginBoard(); // Now finish settup up the board and check the on button
 
-    //loadSettings(); // Attempt to load settings after SD is started so we can read the settings file if available
-
     beginIdleTasks(); // Enable processor load calculations
 
     beginUART2(); // Start UART2 on core 0, used to receive serial from ZED and pass out over SPP
@@ -811,6 +788,13 @@ void setup()
     beginSystemState(); // Determine initial system state. Start task for button monitoring.
 
     updateRTC(); // The GNSS likely has time/date. Update ESP32 RTC to match. Needed for PointPerfect key expiration.
+
+    bool veml_online = true;
+    if (!veml.begin()) {
+      Serial.println("Sensor not found");
+      veml_online = false;
+    }
+    Serial.println("Sensor found");
 
     Serial.flush(); // Complete any previous prints
 
