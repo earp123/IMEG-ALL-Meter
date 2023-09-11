@@ -26,66 +26,6 @@ class BTSerialInterface
     virtual void flush() = 0;
 };
 
-class BTClassicSerial : public virtual BTSerialInterface, public BluetoothSerial
-{
-    // Everything is already implemented in BluetoothSerial since the code was
-    // originally written using that class
-  public:
-    bool begin(String deviceName, bool isMaster, uint16_t rxQueueSize, uint16_t txQueueSize)
-    {
-        return BluetoothSerial::begin(deviceName, isMaster, rxQueueSize, txQueueSize);
-    }
-
-    void disconnect()
-    {
-        BluetoothSerial::disconnect();
-    }
-
-    void end()
-    {
-        BluetoothSerial::end();
-    }
-
-    esp_err_t register_callback(esp_spp_cb_t * callback)
-    {
-        return BluetoothSerial::register_callback(callback);
-    }
-
-    void setTimeout(unsigned long timeout)
-    {
-        BluetoothSerial::setTimeout(timeout);
-    }
-
-    int available()
-    {
-        return BluetoothSerial::available();
-    }
-
-    size_t readBytes(uint8_t *buffer, size_t bufferSize)
-    {
-        return BluetoothSerial::readBytes(buffer, bufferSize);
-    }
-
-    int read()
-    {
-        return BluetoothSerial::read();
-    }
-
-    size_t write(const uint8_t *buffer, size_t size)
-    {
-        return BluetoothSerial::write(buffer, size);
-    }
-
-    size_t write(uint8_t value)
-    {
-        return BluetoothSerial::write(value);
-    }
-
-    void flush()
-    {
-        BluetoothSerial::flush();
-    }
-};
 
 class BTLESerial : public virtual BTSerialInterface, public BleSerial
 {

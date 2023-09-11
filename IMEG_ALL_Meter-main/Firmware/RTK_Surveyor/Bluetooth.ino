@@ -157,13 +157,7 @@ void bluetoothStart()
         snprintf(deviceName, sizeof(deviceName), "%s %s%02X%02X", platformPrefix, stateName, btMACAddress[4],
                  btMACAddress[5]);
 
-        // Select Bluetooth setup
-        if (settings.bluetoothRadioType == BLUETOOTH_RADIO_OFF)
-            return;
-        else if (settings.bluetoothRadioType == BLUETOOTH_RADIO_SPP)
-            bluetoothSerial = new BTClassicSerial();
-        else if (settings.bluetoothRadioType == BLUETOOTH_RADIO_BLE)
-            bluetoothSerial = new BTLESerial();
+        bluetoothSerial = new BTLESerial();
 
         // Not yet implemented
         //  if (pinBluetoothTaskHandle == nullptr)
@@ -216,13 +210,6 @@ void bluetoothStart()
         systemPrint("Bluetooth broadcasting as: ");
         systemPrintln(deviceName);
 
-        // Start task for controlling Bluetooth pair LED
-        if (productVariant == RTK_SURVEYOR)
-        {
-            ledcWrite(ledBTChannel, 255);                    // Turn on BT LED
-            btLEDTask.detach();                              // Slow down the BT LED blinker task
-            btLEDTask.attach(btLEDTaskPace2Hz, updateBTled); // Rate in seconds, callback
-        }
 
         bluetoothState = BT_NOTCONNECTED;
         reportHeapNow();
