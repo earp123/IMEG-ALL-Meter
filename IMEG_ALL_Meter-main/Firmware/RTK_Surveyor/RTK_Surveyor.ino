@@ -689,6 +689,8 @@ unsigned long lbandLastReport = 0;
 
 #include "Adafruit_VEML7700.h"
 Adafruit_VEML7700 veml = Adafruit_VEML7700();
+bool veml_online = true;
+uint16_t lux_read = 0;
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 /*
@@ -789,7 +791,7 @@ void setup()
 
     updateRTC(); // The GNSS likely has time/date. Update ESP32 RTC to match. Needed for PointPerfect key expiration.
 
-    bool veml_online = true;
+    
     if (!veml.begin()) {
       Serial.println("Sensor not found");
       veml_online = false;

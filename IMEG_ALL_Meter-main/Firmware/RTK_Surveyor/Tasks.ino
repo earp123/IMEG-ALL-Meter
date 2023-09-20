@@ -378,9 +378,11 @@ void handleGnssDataTask(void *e)
 
             // If we are in the config menu, supress data flowing from ZED to cell phone
             if (btPrintEcho == false)
-                // Push new data to BT SPP
+            {   
+              // Push new data to BT SPP
                 btBytesToSend = bluetoothWrite(&ringBuffer[btTail], btBytesToSend);
-
+                bluetoothWriteLux(lux_read);
+            }
             if (btBytesToSend > 0)
             {
 

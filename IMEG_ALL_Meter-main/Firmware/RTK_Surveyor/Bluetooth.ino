@@ -43,8 +43,6 @@ void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
     {
         systemPrintln("BT client Connected");
         bluetoothState = BT_CONNECTED;
-        if (productVariant == RTK_SURVEYOR)
-            digitalWrite(pin_bluetoothStatusLED, HIGH);
     }
 
     if (event == ESP_SPP_CLOSE_EVT)
@@ -56,8 +54,6 @@ void bluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
         printEndpoint = PRINT_ENDPOINT_SERIAL;
 
         bluetoothState = BT_NOTCONNECTED;
-        if (productVariant == RTK_SURVEYOR)
-            digitalWrite(pin_bluetoothStatusLED, LOW);
     }
 }
 
@@ -131,6 +127,14 @@ int bluetoothWrite(uint8_t value)
 #endif // COMPILE_BT
 }
 
+// Write data to the Lux Service on the Bluetooth device
+void bluetoothWriteLux(uint16_t value)
+{
+#ifdef COMPILE_BT
+    bluetoothSerial->writeLux(value);
+#endif // COMPILE_BT
+}
+
 // Flush Bluetooth device
 void bluetoothFlush()
 {
@@ -177,9 +181,6 @@ void bluetoothStart()
             false) // localName, isMaster, rxBufferSize, txBufferSize
         {
             systemPrintln("An error occurred initializing Bluetooth");
-
-            if (productVariant == RTK_SURVEYOR)
-                digitalWrite(pin_bluetoothStatusLED, LOW);
             return;
         }
 
@@ -226,9 +227,6 @@ void pinBluetoothTask(void *pvParameters)
         false) // localName, isMaster, rxBufferSize,
     {
         systemPrintln("An error occurred initializing Bluetooth");
-
-        if (productVariant == RTK_SURVEYOR)
-            digitalWrite(pin_bluetoothStatusLED, LOW);
     }
 
     bluetoothPinned = true;

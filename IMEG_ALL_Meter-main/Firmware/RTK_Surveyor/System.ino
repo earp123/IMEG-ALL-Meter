@@ -759,10 +759,17 @@ bool setConstellations(bool sendCompleteBatch)
 void printPosition()
 {
     // Periodically print the position
-    if (settings.enablePrintPosition && ((millis() - lastPrintPosition) > 15000))
+    if (/*settings.enablePrintPosition && */((millis() - lastPrintPosition) > 15000))
     {
-        printCurrentConditions();
-        lastPrintPosition = millis();
+      if (veml_online)
+      {
+        lux_read = veml.readLux(VEML_LUX_AUTO);
+        Serial.print("Lux Reading: "); Serial.println(lux_read);
+        Serial.flush();
+      }
+
+      printCurrentConditions();
+      lastPrintPosition = millis();
     }
 }
 

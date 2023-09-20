@@ -5,7 +5,7 @@
 //https://github.com/sparkfun/SparkFun_RTK_Firmware/issues/469
 #include "src/BluetoothSerial/BluetoothSerial.h"
 
-#include <BleSerial.h> //Click here to get the library: http://librarymanager/All#ESP32_BleSerial v1.0.4 by Avinab Malla
+#include <BleSerialLux.h> 
 
 class BTSerialInterface
 {
@@ -24,6 +24,7 @@ class BTSerialInterface
     virtual size_t write(const uint8_t *buffer, size_t size) = 0;
     virtual size_t write(uint8_t value) = 0;
     virtual void flush() = 0;
+    virtual void writeLux(uint16_t lux_val) = 0;
 };
 
 
@@ -85,7 +86,12 @@ class BTLESerial : public virtual BTSerialInterface, public BleSerial
 
     void flush()
     {
-        BleSerial::flush();
+      BleSerial::flush();
+    }
+
+    void writeLux(uint16_t lux_val)
+    {
+      BleSerial::writeLux(lux_val);
     }
 
     // override BLEServerCallbacks
