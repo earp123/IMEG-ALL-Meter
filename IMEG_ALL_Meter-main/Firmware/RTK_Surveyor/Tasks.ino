@@ -380,8 +380,8 @@ void handleGnssDataTask(void *e)
             if (btPrintEcho == false)
             {   
               // Push new data to BT SPP
-                btBytesToSend = bluetoothWrite(&ringBuffer[btTail], btBytesToSend);
-                bluetoothWriteLux(lux_read);
+              btBytesToSend = bluetoothWrite(&ringBuffer[btTail], btBytesToSend);
+              bluetoothWriteLux(lux_read);
             }
             if (btBytesToSend > 0)
             {

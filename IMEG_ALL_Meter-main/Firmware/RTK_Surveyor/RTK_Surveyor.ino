@@ -691,6 +691,8 @@ unsigned long lbandLastReport = 0;
 Adafruit_VEML7700 veml = Adafruit_VEML7700();
 bool veml_online = true;
 uint16_t lux_read = 0;
+#define LUX_READING_SAMPLE_SIZE 10 //increasing will block for longer
+#define STANDARD_DEVIATION_THRESHOLD 1.0 //decreasing will block for longer
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 /*
