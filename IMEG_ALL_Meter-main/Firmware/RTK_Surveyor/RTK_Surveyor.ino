@@ -24,7 +24,7 @@
 #define COMPILE_ESPNOW   // Requires WiFi. Comment out to remove ESP-Now functionality.
 #define COMPILE_BT       // Comment out to remove Bluetooth functionality
 //#define COMPILE_L_BAND   // Comment out to remove L-Band functionality
-#define COMPILE_SD_MMC   // Comment out to remove REFERENCE_STATION microSD SD_MMC support
+//#define COMPILE_SD_MMC   // Comment out to remove REFERENCE_STATION microSD SD_MMC support
 //#define COMPILE_ETHERNET // Comment out to remove REFERENCE_STATION Ethernet (W5500) support
 // #define REF_STN_GNSS_DEBUG //Uncomment this line to output GNSS library debug messages on serialGNSS. Ref Stn only.
 // Needs ENABLE_DEVELOPER
