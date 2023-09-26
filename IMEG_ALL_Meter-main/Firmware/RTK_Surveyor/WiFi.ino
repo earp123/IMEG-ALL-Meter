@@ -150,7 +150,7 @@ bool wifiStartAP()
         IPAddress subnet(255, 255, 255, 0);
 
         WiFi.softAPConfig(local_IP, gateway, subnet);
-        if (WiFi.softAP("RTK Config") == false) // Must be short enough to fit OLED Width
+        if (WiFi.softAP("IMEG ALL Meter") == false) 
         {
             systemPrintln("WiFi AP failed to start");
             return (false);
