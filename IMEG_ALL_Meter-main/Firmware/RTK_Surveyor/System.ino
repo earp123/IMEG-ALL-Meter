@@ -765,7 +765,11 @@ void printPosition()
       {
                                         //TODO make these parameters user adjustable eventually \/
         lux_read = veml.readLux_sd(LUX_READING_SAMPLE_SIZE, STANDARD_DEVIATION_THRESHOLD);
-        Serial.print("Lux Reading: "); Serial.println(lux_read);
+        if(lux_read > 0){
+          Serial.print("Lux Reading: "); Serial.println(lux_read);
+        } 
+        else
+          Serial.println("Lux Reading: Unstable");
         Serial.flush();
       }
 
