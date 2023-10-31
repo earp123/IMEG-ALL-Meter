@@ -767,8 +767,6 @@ void setup()
 
     identifyBoard(); // Determine what hardware platform we are running on
 
-    initializePowerPins(); // Initialize any essential power pins - e.g. enable power for the Display
-
     beginI2C();
 
     beginFS(); // Start LittleFS file system for settings

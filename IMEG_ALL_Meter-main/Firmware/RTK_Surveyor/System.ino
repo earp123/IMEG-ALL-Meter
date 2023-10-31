@@ -138,12 +138,7 @@ bool configureUbloxModule()
 
         if (commandSupported(UBLOX_CFG_I2CINPROT_SPARTN) == true)
         {
-            if (productVariant == RTK_FACET_LBAND)
-                response &= theGNSS.addCfgValset(
-                    UBLOX_CFG_I2CINPROT_SPARTN,
-                    1); // We push NEO-D9S correction data (SPARTN) to ZED-F9P over the I2C interface
-            else
-                response &= theGNSS.addCfgValset(UBLOX_CFG_I2CINPROT_SPARTN, 0);
+          response &= theGNSS.addCfgValset(UBLOX_CFG_I2CINPROT_SPARTN, 0);
         }
     }
 
@@ -257,52 +252,6 @@ bool configureUbloxModule()
     return (response);
 }
 
-// Turn on indicator LEDs to verify LED function and indicate setup sucess
-void danceLEDs()
-{
-    if (productVariant == RTK_SURVEYOR)
-    {
-        for (int x = 0; x < 2; x++)
-        {
-            digitalWrite(pin_positionAccuracyLED_1cm, HIGH);
-            digitalWrite(pin_positionAccuracyLED_10cm, HIGH);
-            digitalWrite(pin_positionAccuracyLED_100cm, HIGH);
-            digitalWrite(pin_baseStatusLED, HIGH);
-            digitalWrite(pin_bluetoothStatusLED, HIGH);
-            delay(100);
-            digitalWrite(pin_positionAccuracyLED_1cm, LOW);
-            digitalWrite(pin_positionAccuracyLED_10cm, LOW);
-            digitalWrite(pin_positionAccuracyLED_100cm, LOW);
-            digitalWrite(pin_baseStatusLED, LOW);
-            digitalWrite(pin_bluetoothStatusLED, LOW);
-            delay(100);
-        }
-
-        digitalWrite(pin_positionAccuracyLED_1cm, HIGH);
-        digitalWrite(pin_positionAccuracyLED_10cm, HIGH);
-        digitalWrite(pin_positionAccuracyLED_100cm, HIGH);
-        digitalWrite(pin_baseStatusLED, HIGH);
-        digitalWrite(pin_bluetoothStatusLED, HIGH);
-
-        delay(250);
-        digitalWrite(pin_positionAccuracyLED_1cm, LOW);
-        delay(250);
-        digitalWrite(pin_positionAccuracyLED_10cm, LOW);
-        delay(250);
-        digitalWrite(pin_positionAccuracyLED_100cm, LOW);
-
-        delay(250);
-        digitalWrite(pin_baseStatusLED, LOW);
-        delay(250);
-        digitalWrite(pin_bluetoothStatusLED, LOW);
-    }
-    else
-    {
-        // Units can boot under 1s. Keep splash screen up for at least 2s.
-        while ((millis() - splashStart) < 2000)
-            delay(1);
-    }
-}
 
 // Update Battery level LEDs every 5s
 void updateBattery()
@@ -362,30 +311,6 @@ void checkBatteryLevels()
 
         systemPrintf("%s\r\n", tempStr);
     }
-
-    if (productVariant == RTK_SURVEYOR)
-    {
-        if (battLevel < 10)
-        {
-            ledcWrite(ledRedChannel, 255);
-            ledcWrite(ledGreenChannel, 0);
-        }
-        else if (battLevel < 50)
-        {
-            ledcWrite(ledRedChannel, 128);
-            ledcWrite(ledGreenChannel, 128);
-        }
-        else if (battLevel <= 110)
-        {
-            ledcWrite(ledRedChannel, 0);
-            ledcWrite(ledGreenChannel, 255);
-        }
-        else
-        {
-            ledcWrite(ledRedChannel, 10);
-            ledcWrite(ledGreenChannel, 0);
-        }
-    }
 }
 
 // Ping an I2C device and see if it responds
@@ -421,39 +346,6 @@ void reportHeap()
         }
     }
 }
-
-// Based on current LED state, blink upwards fashion
-// Used to indicate casting
-void cyclePositionLEDs()
-{
-    if (productVariant == RTK_SURVEYOR)
-    {
-        // Cycle position LEDs to indicate casting
-        if (millis() - lastCasterLEDupdate > 500)
-        {
-            lastCasterLEDupdate = millis();
-            if (digitalRead(pin_positionAccuracyLED_100cm) == HIGH)
-            {
-                digitalWrite(pin_positionAccuracyLED_1cm, LOW);
-                digitalWrite(pin_positionAccuracyLED_10cm, HIGH);
-                digitalWrite(pin_positionAccuracyLED_100cm, LOW);
-            }
-            else if (digitalRead(pin_positionAccuracyLED_10cm) == HIGH)
-            {
-                digitalWrite(pin_positionAccuracyLED_1cm, HIGH);
-                digitalWrite(pin_positionAccuracyLED_10cm, LOW);
-                digitalWrite(pin_positionAccuracyLED_100cm, LOW);
-            }
-            else // Catch all
-            {
-                digitalWrite(pin_positionAccuracyLED_1cm, LOW);
-                digitalWrite(pin_positionAccuracyLED_10cm, LOW);
-                digitalWrite(pin_positionAccuracyLED_100cm, HIGH);
-            }
-        }
-    }
-}
-
 
 
 // Create $GNTXT, type message complete with CRC

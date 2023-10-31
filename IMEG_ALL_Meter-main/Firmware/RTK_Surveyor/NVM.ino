@@ -113,9 +113,6 @@ void recordSystemSettingsToFile(File *settingsFile)
 
     settingsFile->printf("%s=%s\r\n", "zedUniqueId", zedUniqueId);
 
-    if (productVariant == RTK_FACET_LBAND)
-        settingsFile->printf("%s=%s\r\n", "neoFirmwareVersion", neoFirmwareVersion);
-
     settingsFile->printf("%s=%d\r\n", "printDebugMessages", settings.printDebugMessages);
     settingsFile->printf("%s=%d\r\n", "enableSD", settings.enableSD);
     settingsFile->printf("%s=%d\r\n", "enableDisplay", settings.enableDisplay);

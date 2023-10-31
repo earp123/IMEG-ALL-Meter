@@ -264,12 +264,6 @@ InputResponse getString(char *userString, uint8_t stringSize)
             theGNSS.checkCallbacks();
         }
 
-        // Keep processing NTP requests
-        if (online.ethernetNTPServer)
-        {
-            updateEthernetNTPServer();
-        }
-
         //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
         if (btPrintEchoExit) // User has disconnect from BT. Force exit all menus.

@@ -43,28 +43,13 @@ void menuMain()
 
         systemPrintln("2) Configure GNSS Messages");
 
-        if (zedModuleType == PLATFORM_F9P)
-            systemPrintln("3) Configure Base");
-        else if (zedModuleType == PLATFORM_F9R)
-            systemPrintln("3) Configure Sensor Fusion");
-
         systemPrintln("4) Configure Ports");
-
-        systemPrintln("5) Configure Logging");
 
 #ifdef COMPILE_WIFI
         systemPrintln("6) Configure WiFi");
 #else  // COMPILE_WIFI
         systemPrintln("6) **WiFi Not Compiled**");
 #endif // COMPILE_WIFI
-
-#ifdef COMPILE_ETHERNET
-        if (HAS_ETHERNET)
-        {
-            systemPrintln("e) Configure Ethernet");
-            systemPrintln("n) Configure NTP");
-        }
-#endif // COMPILE_ETHERNET
 
         systemPrintln("p) Configure User Profiles");
 
@@ -73,9 +58,6 @@ void menuMain()
 #else  // COMPILE_ESPNOW
         systemPrintln("r) **ESP-Now Not Compiled**");
 #endif // COMPILE_ESPNOW
-
-        if (online.lband == true)
-            systemPrintln("P) Configure PointPerfect");
 
         systemPrintln("s) Configure System");
 
@@ -94,18 +76,10 @@ void menuMain()
             menuMessages();
         else if (incoming == 4)
             menuPorts();
-        else if (incoming == 5)
-            menuLog();
         else if (incoming == 6)
             menuWiFi();
-        else if (incoming == 'e' && (HAS_ETHERNET))
-            menuEthernet();
-        else if (incoming == 'n' && (HAS_ETHERNET))
-            menuNTP();
         else if (incoming == 's')
             menuSystem();
-        else if (incoming == 'p')
-            menuUserProfiles();
 
 #ifdef COMPILE_ESPNOW
         else if (incoming == 'r')
@@ -330,56 +304,41 @@ void menuRadio()
         systemPrintln();
         systemPrintln("Menu: Radios");
 
-        systemPrint("1) Select Radio Type: ");
-        if (settings.radioType == RADIO_EXTERNAL)
-            systemPrintln("External only");
-        else if (settings.radioType == RADIO_ESPNOW)
-            systemPrintln("Internal ESP-Now");
+        // Pretty print the MAC of all radios
+        systemPrint("  Radio MAC: ");
+        for (int x = 0; x < 5; x++)
+            systemPrintf("%02X:", wifiMACAddress[x]);
+        systemPrintf("%02X\r\n", wifiMACAddress[5]);
 
-        if (settings.radioType == RADIO_ESPNOW)
+        if (settings.espnowPeerCount > 0)
         {
-            // Pretty print the MAC of all radios
-            systemPrint("  Radio MAC: ");
-            for (int x = 0; x < 5; x++)
-                systemPrintf("%02X:", wifiMACAddress[x]);
-            systemPrintf("%02X\r\n", wifiMACAddress[5]);
-
-            if (settings.espnowPeerCount > 0)
+            systemPrintln("  Paired Radios: ");
+            for (int x = 0; x < settings.espnowPeerCount; x++)
             {
-                systemPrintln("  Paired Radios: ");
-                for (int x = 0; x < settings.espnowPeerCount; x++)
-                {
-                    systemPrint("    ");
-                    for (int y = 0; y < 5; y++)
-                        systemPrintf("%02X:", settings.espnowPeers[x][y]);
-                    systemPrintf("%02X\r\n", settings.espnowPeers[x][5]);
-                }
-            }
-            else
-                systemPrintln("  No Paired Radios");
-
-            systemPrintln("2) Pair radios");
-            systemPrintln("3) Forget all radios");
-            if (ENABLE_DEVELOPER)
-            {
-                systemPrintln("4) Add dummy radio");
-                systemPrintln("5) Send dummy data");
-                systemPrintln("6) Broadcast dummy data");
+                systemPrint("    ");
+                for (int y = 0; y < 5; y++)
+                    systemPrintf("%02X:", settings.espnowPeers[x][y]);
+                systemPrintf("%02X\r\n", settings.espnowPeers[x][5]);
             }
         }
+        else
+            systemPrintln("  No Paired Radios");
+
+        systemPrintln("2) Pair radios");
+        systemPrintln("3) Forget all radios");
+        if (ENABLE_DEVELOPER)
+        {
+            systemPrintln("4) Add dummy radio");
+            systemPrintln("5) Send dummy data");
+            systemPrintln("6) Broadcast dummy data");
+        }
+      
 
         systemPrintln("x) Exit");
 
         int incoming = getNumber(); // Returns EXIT, TIMEOUT, or long
 
-        if (incoming == 1)
-        {
-            if (settings.radioType == RADIO_EXTERNAL)
-                settings.radioType = RADIO_ESPNOW;
-            else if (settings.radioType == RADIO_ESPNOW)
-                settings.radioType = RADIO_EXTERNAL;
-        }
-        else if (settings.radioType == RADIO_ESPNOW && incoming == 2)
+        if (settings.radioType == RADIO_ESPNOW && incoming == 2)
         {
             espnowStaticPairing();
         }

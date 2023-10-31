@@ -70,7 +70,7 @@ void menuSystem()
 
             systemPrint(" - ");
 
-            printNEOInfo();
+            
         }
 
         // Display the Bluetooth status
@@ -650,12 +650,7 @@ void menuDebug()
 
             if (settings.enableI2Cdebug)
             {
-#if defined(REF_STN_GNSS_DEBUG)
-                if (ENABLE_DEVELOPER && productVariant == REFERENCE_STATION)
-                    theGNSS.enableDebugging(serialGNSS); // Output all debug messages over serialGNSS
-                else
-#endif  // REF_STN_GNSS_DEBUG
-                    theGNSS.enableDebugging(Serial, true); // Enable only the critical debug messages over Serial
+              theGNSS.enableDebugging(Serial, true); // Enable only the critical debug messages over Serial
             }
             else
                 theGNSS.disableDebugging();

@@ -112,10 +112,7 @@ void startWebServer(bool startWiFi, int httpPort)
 
     webserver->on("/src/rtk-setup.png", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response;
-        if (productVariant == REFERENCE_STATION)
-            response = request->beginResponse_P(200, "image/png", rtkSetup_png, sizeof(rtkSetup_png));
-        else
-            response = request->beginResponse_P(200, "image/png", rtkSetupWiFi_png, sizeof(rtkSetupWiFi_png));
+        response = request->beginResponse_P(200, "image/png", rtkSetupWiFi_png, sizeof(rtkSetupWiFi_png));
         response->addHeader("Content-Encoding", "gzip");
         request->send(response);
     });
@@ -1172,7 +1169,7 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
 
         if (configureViaEthernet)
         {
-            endEthernerWebServerESP32W5500();
+            
 
             // We need to exit configure-via-ethernet mode.
             // But if the settings have not been saved then lastState will still be STATE_CONFIG_VIA_ETH_STARTED.

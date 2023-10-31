@@ -160,34 +160,6 @@ void updateAccuracyLEDs()
                     systemPrint(numSV);
                     systemPrintln();
                 }
-
-                if (productVariant == RTK_SURVEYOR)
-                {
-                    if (horizontalAccuracy <= 0.02)
-                    {
-                        digitalWrite(pin_positionAccuracyLED_1cm, HIGH);
-                        digitalWrite(pin_positionAccuracyLED_10cm, HIGH);
-                        digitalWrite(pin_positionAccuracyLED_100cm, HIGH);
-                    }
-                    else if (horizontalAccuracy <= 0.100)
-                    {
-                        digitalWrite(pin_positionAccuracyLED_1cm, LOW);
-                        digitalWrite(pin_positionAccuracyLED_10cm, HIGH);
-                        digitalWrite(pin_positionAccuracyLED_100cm, HIGH);
-                    }
-                    else if (horizontalAccuracy <= 1.0000)
-                    {
-                        digitalWrite(pin_positionAccuracyLED_1cm, LOW);
-                        digitalWrite(pin_positionAccuracyLED_10cm, LOW);
-                        digitalWrite(pin_positionAccuracyLED_100cm, HIGH);
-                    }
-                    else if (horizontalAccuracy > 1.0)
-                    {
-                        digitalWrite(pin_positionAccuracyLED_1cm, LOW);
-                        digitalWrite(pin_positionAccuracyLED_10cm, LOW);
-                        digitalWrite(pin_positionAccuracyLED_100cm, LOW);
-                    }
-                }
             }
             else if (settings.enablePrintRoverAccuracy)
             {
