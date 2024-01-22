@@ -166,6 +166,7 @@ bool configureUbloxModule()
                 settings.minCNO_F9P); // Set minimum satellite signal level for navigation - default 6
     }
 
+/*
     if (commandSupported(UBLOX_CFG_NAV2_OUT_ENABLED) == true)
     {
         // Count NAV2 messages and enable NAV2 as needed.
@@ -178,7 +179,7 @@ bool configureUbloxModule()
         else
             response &= theGNSS.addCfgValset(UBLOX_CFG_NAV2_OUT_ENABLED, 0); // Disable NAV2 messages
     }
-
+*/
     response &= theGNSS.sendCfgValset();
 
     if (response == false)

@@ -1,98 +1,14 @@
 void menuPorts()
 {
-    if (productVariant == RTK_SURVEYOR || productVariant == REFERENCE_STATION)
-        menuPortsSurveyor();
-    else if (productVariant == RTK_EXPRESS || productVariant == RTK_EXPRESS_PLUS || productVariant == RTK_FACET ||
-             productVariant == RTK_FACET_LBAND)
-        menuPortsMultiplexed();
+  menuPortsMultiplexed();
 }
 
-// Set the baud rates for the radio and data ports
-void menuPortsSurveyor()
-{
-    while (1)
-    {
-        systemPrintln();
-        systemPrintln("Menu: Ports");
 
-        systemPrint("1) Set serial baud rate for Radio Port: ");
-        systemPrint(theGNSS.getVal32(UBLOX_CFG_UART2_BAUDRATE));
-        systemPrintln(" bps");
-
-        systemPrint("2) Set serial baud rate for Data Port: ");
-        systemPrint(theGNSS.getVal32(UBLOX_CFG_UART1_BAUDRATE));
-        systemPrintln(" bps");
-
-        systemPrint("3) GNSS UART2 UBX Protocol In: ");
-        if (settings.enableUART2UBXIn == true)
-            systemPrintln("Enabled");
-        else
-            systemPrintln("Disabled");
-
-        systemPrintln("x) Exit");
-
-        int incoming = getNumber(); // Returns EXIT, TIMEOUT, or long
-
-        if (incoming == 1)
-        {
-            systemPrint("Enter baud rate (4800 to 921600) for Radio Port: ");
-            int newBaud = getNumber(); // Returns EXIT, TIMEOUT, or long
-            if ((newBaud != INPUT_RESPONSE_GETNUMBER_EXIT) && (newBaud != INPUT_RESPONSE_GETNUMBER_TIMEOUT))
-            {
-                if (newBaud == 4800 || newBaud == 9600 || newBaud == 19200 || newBaud == 38400 || newBaud == 57600 ||
-                    newBaud == 115200 || newBaud == 230400 || newBaud == 460800 || newBaud == 921600)
-                {
-                    settings.radioPortBaud = newBaud;
-                    if (online.gnss == true)
-                        theGNSS.setVal32(UBLOX_CFG_UART2_BAUDRATE, settings.radioPortBaud);
-                }
-                else
-                {
-                    systemPrintln("Error: Baud rate out of range");
-                }
-            }
-        }
-        else if (incoming == 2)
-        {
-            systemPrint("Enter baud rate (4800 to 921600) for Data Port: ");
-            int newBaud = getNumber(); // Returns EXIT, TIMEOUT, or long
-            if ((newBaud != INPUT_RESPONSE_GETNUMBER_EXIT) && (newBaud != INPUT_RESPONSE_GETNUMBER_TIMEOUT))
-            {
-                if (newBaud == 4800 || newBaud == 9600 || newBaud == 19200 || newBaud == 38400 || newBaud == 57600 ||
-                    newBaud == 115200 || newBaud == 230400 || newBaud == 460800 || newBaud == 921600)
-                {
-                    settings.dataPortBaud = newBaud;
-                    if (online.gnss == true)
-                        theGNSS.setVal32(UBLOX_CFG_UART1_BAUDRATE, settings.dataPortBaud);
-                }
-                else
-                {
-                    systemPrintln("Error: Baud rate out of range");
-                }
-            }
-        }
-        else if (incoming == 3)
-        {
-            settings.enableUART2UBXIn ^= 1;
-            systemPrintln("UART2 Protocol In updated. Changes will be applied at next restart");
-        }
-
-        else if (incoming == 'x')
-            break;
-        else if (incoming == INPUT_RESPONSE_GETNUMBER_EXIT)
-            break;
-        else if (incoming == INPUT_RESPONSE_GETNUMBER_TIMEOUT)
-            break;
-        else
-            printUnknown(incoming);
-    }
-
-    clearBuffer(); // Empty buffer of any newline chars
-}
 
 // Set the baud rates for the radio and data ports
 void menuPortsMultiplexed()
 {
+  /*
     while (1)
     {
         systemPrintln();
@@ -216,6 +132,7 @@ void menuPortsMultiplexed()
         else
             printUnknown(incoming);
     }
+    */
 
     clearBuffer(); // Empty buffer of any newline chars
 }
@@ -225,6 +142,7 @@ void menuPortsMultiplexed()
 void menuPortHardwareTriggers()
 {
     bool updateSettings = false;
+    /*
     while (1)
     {
         systemPrintln();
@@ -328,7 +246,7 @@ void menuPortHardwareTriggers()
             break;
         else
             printUnknown(incoming);
-    }
+    }*/
 
     clearBuffer(); // Empty buffer of any newline chars
 

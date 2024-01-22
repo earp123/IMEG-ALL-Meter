@@ -1,3 +1,4 @@
+#ifdef COMPILE_MENUS
 // Display current system status
 void menuSystem()
 {
@@ -53,26 +54,6 @@ void menuSystem()
         else
             systemPrintln("Offline");
 
-        if (online.lband == true)
-        {
-            systemPrint("L-Band: Online - ");
-
-            if (online.lbandCorrections == true)
-                systemPrint("Keys Good");
-            else
-                systemPrint("No Keys");
-
-            systemPrint(" / Corrections Received");
-            if (lbandCorrectionsReceived == false)
-                systemPrint(" Failed");
-
-            systemPrintf(" / Eb/N0[dB] (>9 is good): %0.2f", lBandEBNO);
-
-            systemPrint(" - ");
-
-            
-        }
-
         // Display the Bluetooth status
         bluetoothTest(false);
 
@@ -83,31 +64,6 @@ void menuSystem()
         if (wifiState == WIFI_CONNECTED)
             wifiDisplayIpAddress();
 #endif  // COMPILE_WIFI
-
-#ifdef COMPILE_ETHERNET
-        if (HAS_ETHERNET)
-        {
-            systemPrint("Ethernet cable: ");
-            if (Ethernet.linkStatus() == LinkON)
-                systemPrintln("connected");
-            else
-                systemPrintln("disconnected");
-            systemPrint("Ethernet MAC Address: ");
-            systemPrintf("%02X:%02X:%02X:%02X:%02X:%02X\r\n", ethernetMACAddress[0], ethernetMACAddress[1],
-                         ethernetMACAddress[2], ethernetMACAddress[3], ethernetMACAddress[4], ethernetMACAddress[5]);
-            systemPrint("Ethernet IP Address: ");
-            systemPrintln(Ethernet.localIP());
-            if (!settings.ethernetDHCP)
-            {
-                systemPrint("Ethernet DNS: ");
-                systemPrintf("%s\r\n", settings.ethernetDNS.toString());
-                systemPrint("Ethernet Gateway: ");
-                systemPrintf("%s\r\n", settings.ethernetGateway.toString());
-                systemPrint("Ethernet Subnet Mask: ");
-                systemPrintf("%s\r\n", settings.ethernetSubnet.toString());
-            }
-        }
-#endif  // COMPILE_ETHERNET
 
         // Display the uptime
         uint64_t uptimeMilliseconds = millis();
@@ -132,51 +88,7 @@ void menuSystem()
         systemPrintf("%d %02d:%02d:%02d.%03lld (Resets: %d)\r\n", uptimeDays, uptimeHours, uptimeMinutes, uptimeSeconds,
                      uptimeMilliseconds, settings.resetCount);
 
-        // Display NTRIP Client status and uptime
-        if (settings.enableNtripClient == true &&
-            (systemState >= STATE_ROVER_NOT_STARTED && systemState <= STATE_ROVER_RTK_FIX))
-        {
-            systemPrint("NTRIP Client ");
-            switch (ntripClientState)
-            {
-            case NTRIP_CLIENT_OFF:
-                systemPrint("Disconnected");
-                break;
-            case NTRIP_CLIENT_ON:
-            case NTRIP_CLIENT_NETWORK_STARTED:
-            case NTRIP_CLIENT_NETWORK_CONNECTED:
-            case NTRIP_CLIENT_CONNECTING:
-                systemPrint("Connecting");
-                break;
-            case NTRIP_CLIENT_CONNECTED:
-                systemPrint("Connected");
-                break;
-            default:
-                systemPrintf("Unknown: %d", ntripClientState);
-                break;
-            }
-            systemPrintf(" - %s/%s:%d", settings.ntripClient_CasterHost, settings.ntripClient_MountPoint,
-                         settings.ntripClient_CasterPort);
-
-            uptimeMilliseconds = ntripClientTimer - ntripClientStartTime;
-
-            uptimeDays = uptimeMilliseconds / MILLISECONDS_IN_A_DAY;
-            uptimeMilliseconds %= MILLISECONDS_IN_A_DAY;
-
-            uptimeHours = uptimeMilliseconds / MILLISECONDS_IN_AN_HOUR;
-            uptimeMilliseconds %= MILLISECONDS_IN_AN_HOUR;
-
-            uptimeMinutes = uptimeMilliseconds / MILLISECONDS_IN_A_MINUTE;
-            uptimeMilliseconds %= MILLISECONDS_IN_A_MINUTE;
-
-            uptimeSeconds = uptimeMilliseconds / MILLISECONDS_IN_A_SECOND;
-            uptimeMilliseconds %= MILLISECONDS_IN_A_SECOND;
-
-            systemPrint(" Uptime: ");
-            systemPrintf("%d %02d:%02d:%02d.%03lld (Reconnects: %d)\r\n", uptimeDays, uptimeHours, uptimeMinutes,
-                         uptimeSeconds, uptimeMilliseconds, ntripClientConnectionAttemptsTotal);
-        }
-
+        
 
         systemPrint("e) Echo User Input: ");
         if (settings.echoUserInput == true)
@@ -200,7 +112,7 @@ void menuSystem()
         systemPrintln("r) Reset all settings to default");
 
         // Support mode switching
-        systemPrintln("B) Switch to Base mode");
+        
         systemPrintln("R) Switch to Rover mode");
         systemPrintln("W) Switch to WiFi Config mode");
         systemPrintln("S) Shut down");
@@ -519,11 +431,6 @@ void menuDebug()
         systemPrint("12) Periodically print WiFi state: ");
         systemPrintf("%s\r\n", settings.enablePrintWifiState ? "Enabled" : "Disabled");
 
-        systemPrint("13) Periodically print NTRIP client state: ");
-        systemPrintf("%s\r\n", settings.enablePrintNtripClientState ? "Enabled" : "Disabled");
-
-        systemPrint("14) Periodically print NTRIP server state: ");
-        systemPrintf("%s\r\n", settings.enablePrintNtripServerState ? "Enabled" : "Disabled");
 
         systemPrint("15) Periodically print position: ");
         systemPrintf("%s\r\n", settings.enablePrintPosition ? "Enabled" : "Disabled");
@@ -550,21 +457,6 @@ void menuDebug()
 
         systemPrint("23) Print ring buffer offsets: ");
         systemPrintf("%s\r\n", settings.enablePrintRingBufferOffsets ? "Enabled" : "Disabled");
-
-        systemPrint("24) Print GNSS --> NTRIP caster messages: ");
-        systemPrintf("%s\r\n", settings.enablePrintNtripServerRtcm ? "Enabled" : "Disabled");
-
-        systemPrint("25) Print NTRIP caster --> GNSS messages: ");
-        systemPrintf("%s\r\n", settings.enablePrintNtripClientRtcm ? "Enabled" : "Disabled");
-
-        systemPrint("26) Print states: ");
-        systemPrintf("%s\r\n", settings.enablePrintStates ? "Enabled" : "Disabled");
-
-        systemPrint("27) Print duplicate states: ");
-        systemPrintf("%s\r\n", settings.enablePrintDuplicateStates ? "Enabled" : "Disabled");
-
-        systemPrint("28) RTCM message checking: ");
-        systemPrintf("%s\r\n", settings.enableRtcmMessageChecking ? "Enabled" : "Disabled");
 
         systemPrint("29) Run Logging Test: ");
         systemPrintf("%s\r\n", settings.runLogTest ? "Enabled" : "Disabled");
@@ -733,14 +625,6 @@ void menuDebug()
         {
             settings.enablePrintWifiState ^= 1;
         }
-        else if (incoming == 13)
-        {
-            settings.enablePrintNtripClientState ^= 1;
-        }
-        else if (incoming == 14)
-        {
-            settings.enablePrintNtripServerState ^= 1;
-        }
         else if (incoming == 15)
         {
             settings.enablePrintPosition ^= 1;
@@ -782,35 +666,7 @@ void menuDebug()
         {
             settings.enablePrintRingBufferOffsets ^= 1;
         }
-        else if (incoming == 24)
-        {
-            settings.enablePrintNtripServerRtcm ^= 1;
-        }
-        else if (incoming == 25)
-        {
-            settings.enablePrintNtripClientRtcm ^= 1;
-        }
-        else if (incoming == 26)
-        {
-            settings.enablePrintStates ^= 1;
-        }
-        else if (incoming == 27)
-        {
-            settings.enablePrintDuplicateStates ^= 1;
-        }
-        else if (incoming == 28)
-        {
-            settings.enableRtcmMessageChecking ^= 1;
-        }
-        else if (incoming == 29)
-        {
-            settings.runLogTest ^= 1;
-
-            logTestState = LOGTEST_START; // Start test
-
-            // Mark current log file as complete to force test start
-            startCurrentLogTime_minutes = systemTime_minutes - settings.maxLogLength_minutes;
-        }
+        
         else if (incoming == 30)
         {
             bluetoothTest(true);
@@ -1030,18 +886,7 @@ void menuDebug()
                 }
             }
         }
-        else if (incoming == 'e')
-        {
-            systemPrintln("Erasing LittleFS and resetting");
-            LittleFS.format();
-            ESP.restart();
-        }
-        else if (incoming == 'r')
-        {
-            recordSystemSettings();
-
-            ESP.restart();
-        }
+        
         else if (incoming == 't')
         {
             requestChangeState(STATE_TEST); // We'll enter test mode once exiting all serial menus
@@ -1058,6 +903,7 @@ void menuDebug()
 
     clearBuffer(); // Empty buffer of any newline chars
 }
+#endif //COMPILE_MENUS
 
 // Print the current long/lat/alt/HPA/SIV
 // From Example11_GetHighPrecisionPositionUsingDouble

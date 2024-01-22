@@ -179,8 +179,7 @@ void updateSystemState()
 
         case (STATE_WIFI_CONFIG_NOT_STARTED): {
             
-
-
+#ifdef COMPILE_WEBSERVER
             bluetoothStop();
             espnowStop();
 
@@ -188,10 +187,12 @@ void updateSystemState()
             startWebServer(); // Start in AP mode and show config html page
 
             changeState(STATE_WIFI_CONFIG);
-        }
-        break;
+#endif
+         }
+         break;
 
         case (STATE_WIFI_CONFIG): {
+#ifdef COMPILE_WEBSERVER
             if (incomingSettingsSpot > 0)
             {
                 // Allow for 750ms before we parse buffer for all data to arrive
@@ -218,6 +219,7 @@ void updateSystemState()
                 }
             }
 
+
 #ifdef COMPILE_WIFI
 #ifdef COMPILE_AP
             // Dynamically update the coordinates on the AP page
@@ -226,7 +228,7 @@ void updateSystemState()
                 if (millis() - lastDynamicDataUpdate > 1000)
                 {
                     lastDynamicDataUpdate = millis();
-                    createDynamicDataString(settingsCSV);
+                    
 
                     // log_d("Sending coordinates: %s", settingsCSV);
                     websocket->textAll(settingsCSV);
@@ -234,6 +236,7 @@ void updateSystemState()
             }
 #endif // COMPILE_AP
 #endif // COMPILE_WIFI
+#endif //COMPILE_WEBSERVER
         }
         break;
 

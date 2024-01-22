@@ -10,11 +10,7 @@ class NetworkClient : public Client
     //------------------------------
     NetworkClient(bool useWiFiNotEthernet)
     {
-#if defined(COMPILE_ETHERNET)
-        if (HAS_ETHERNET && (!useWiFiNotEthernet))
-            _client = new EthernetClient;
-        else
-#endif // COMPILE_ETHERNET
+
 #if defined(COMPILE_WIFI)
             _client = new WiFiClient;
 #else   // COMPILE_WIFI

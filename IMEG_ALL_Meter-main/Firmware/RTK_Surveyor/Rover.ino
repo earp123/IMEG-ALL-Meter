@@ -53,7 +53,8 @@ bool configureUbloxModuleRover()
         // product - in Rover mode - we want to leave any RTCM messages enabled on SPI so they can be logged if desired.
 
         // Find first RTCM record in ubxMessage array
-        int firstRTCMRecord = getMessageNumberByName("UBX_RTCM_1005");
+        /*
+       int firstRTCMRecord = getMessageNumberByName("UBX_RTCM_1005");
 
         if (zedModuleType == PLATFORM_F9P)
         {
@@ -84,7 +85,7 @@ bool configureUbloxModuleRover()
                                          settings.ubxMessageRates[firstRTCMRecord + x]); // UBLOX_CFG UART1 + 2 = USB
             }
         }
-
+*/
         response &= theGNSS.addCfgValset(UBLOX_CFG_NMEA_MAINTALKERID,
                                          3); // Return talker ID to GNGGA after NTRIP Client set to GPGGA
 

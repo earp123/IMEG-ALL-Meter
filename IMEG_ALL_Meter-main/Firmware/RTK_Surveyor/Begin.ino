@@ -33,7 +33,7 @@ void beginBoard()
 
 
   char versionString[21];
-  getFirmwareVersion(versionString, sizeof(versionString), true);
+  
   systemPrintf("SparkFun RTK %s %s\r\n", platformPrefix, versionString);
 
   // Get unit MAC address
@@ -46,7 +46,7 @@ void beginBoard()
   ethernetMACAddress[5] += 3; // Convert MAC address to Ethernet MAC (add 3)
 
   // For all boards, check reset reason. If reset was due to wdt or panic, append last log
-  loadSettingsPartial(); // Loads settings from LFS
+  
   if ((esp_reset_reason() == ESP_RST_POWERON) || (esp_reset_reason() == ESP_RST_SW))
   {
       reuseLastLog = false; // Start new log
@@ -54,7 +54,7 @@ void beginBoard()
       if (settings.enableResetDisplay == true)
       {
           settings.resetCount = 0;
-          recordSystemSettingsToFileLFS(settingsFileName); // Avoid overwriting LittleFS settings onto SD
+          
       }
       settings.resetCount = 0;
   }
@@ -66,7 +66,7 @@ void beginBoard()
       {
           settings.resetCount++;
           systemPrintf("resetCount: %d\r\n", settings.resetCount);
-          recordSystemSettingsToFileLFS(settingsFileName); // Avoid overwriting LittleFS settings onto SD
+          
       }
 
       systemPrint("Reset reason: ");
@@ -108,35 +108,6 @@ void beginBoard()
     }
 }
 
-
-void endSD(bool alreadyHaveSemaphore, bool releaseSemaphore)
-{
-    
-
-    // Done with the SD card
-    if (online.microSD)
-    {
-        if (USE_SPI_MICROSD)
-            sd->end();
-
-        online.microSD = false;
-        systemPrintln("microSD: Offline");
-    }
-
-    // Free the caches for the microSD card
-    if (USE_SPI_MICROSD)
-    {
-        if (sd)
-        {
-            delete sd;
-            sd = nullptr;
-        }
-    }
-
-    // Release the semaphore
-    if (releaseSemaphore)
-        xSemaphoreGive(sdCardSemaphore);
-}
 
 // Attempt to de-init the SD card - SPI only
 // https://github.com/greiman/SdFat/issues/351
@@ -222,61 +193,6 @@ void pinUART2Task(void *pvParameters)
     vTaskDelete(nullptr); // Delete task once it has run once
 }
 
-void beginFS()
-{
-    if (online.fs == false)
-    {
-        if (LittleFS.begin(true) == false) // Format LittleFS if begin fails
-        {
-            systemPrintln("Error: LittleFS not online");
-        }
-        else
-        {
-            systemPrintln("LittleFS Started");
-            online.fs = true;
-        }
-    }
-}
-
-// Check if configureViaEthernet.txt exists
-// Used to indicate if SparkFun_WebServer_ESP32_W5500 needs _exclusive_ access to SPI and interrupts
-bool checkConfigureViaEthernet()
-{
-    if (online.fs == false)
-        return false;
-
-    if (LittleFS.exists("/configureViaEthernet.txt"))
-    {
-        log_d("LittleFS configureViaEthernet.txt exists");
-        LittleFS.remove("/configureViaEthernet.txt");
-        return true;
-    }
-
-    return false;
-}
-
-// Force configure-via-ethernet mode by creating configureViaEthernet.txt in LittleFS
-// Used to indicate if SparkFun_WebServer_ESP32_W5500 needs _exclusive_ access to SPI and interrupts
-bool forceConfigureViaEthernet()
-{
-    if (online.fs == false)
-        return false;
-
-    if (LittleFS.exists("/configureViaEthernet.txt"))
-    {
-        log_d("LittleFS configureViaEthernet.txt already exists");
-        return true;
-    }
-
-    File cveFile = LittleFS.open("/configureViaEthernet.txt", FILE_WRITE);
-    cveFile.close();
-
-    if (LittleFS.exists("/configureViaEthernet.txt"))
-        return true;
-
-    log_d("Unable to create configureViaEthernet.txt on LittleFS");
-    return false;
-}
 
 // Connect to ZED module and identify particulars
 void beginGNSS()
@@ -417,7 +333,7 @@ void configureGNSS()
         return;
 
     // Check if the ubxMessageRates or ubxMessageRatesBase need to be defaulted
-    checkMessageRates();
+    //checkMessageRates();
 
     theGNSS.setAutoPVTcallbackPtr(&storePVTdata); // Enable automatic NAV PVT messages with callback to storePVTdata
     theGNSS.setAutoHPPOSLLHcallbackPtr(
@@ -493,13 +409,6 @@ void beginInterrupts()
         attachInterrupt(pin_GNSS_TimePulse, tpISR, RISING);
     }
 
-#ifdef COMPILE_ETHERNET
-    if (HAS_ETHERNET)
-    {
-        pinMode(pin_Ethernet_Interrupt, INPUT_PULLUP);                 // Prepare the interrupt pin
-        attachInterrupt(pin_Ethernet_Interrupt, ethernetISR, FALLING); // Attach the interrupt
-    }
-#endif  // COMPILE_ETHERNET
 }
 
 
@@ -674,11 +583,17 @@ void pinI2CTask(void *pvParameters)
     // SDA/VCC shorted: 1000ms, reponse 5
     // SDA/GND shorted: 14ms, response 5
     Wire.beginTransmission(0x15); // Dummy address
+    int now = millis();
     int endValue = Wire.endTransmission();
+    int i2cDelay = millis()-now;
     if (endValue == 2)
         online.i2c = true;
     else
-        systemPrintln("Error: I2C Bus Not Responding");
+    {
+        systemPrint("Error: I2C Bus Not Responding. endValue = ");
+        systemPrint(endValue);systemPrint(".....");
+        systemPrint(i2cDelay);systemPrintln("ms");
+    }
 
     i2cPinned = true;
 

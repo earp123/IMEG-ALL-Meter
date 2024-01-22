@@ -310,6 +310,7 @@ void wifiStart()
 // If ESP NOW is active, leave WiFi on enough for ESP NOW
 void wifiStop()
 {
+#ifdef COMPILE_WEBSERVER
 #ifdef COMPILE_WIFI
     stopWebServer();
 
@@ -333,10 +334,10 @@ void wifiStop()
             delay(5);
         systemPrintln("TCP Server offline");
     }
-
+/*
     if (settings.mdnsEnable == true)
         MDNS.end();
-
+*/
     wifiSetState(WIFI_OFF);
 
     wifiConnectionAttempts = 0; // Reset the timeout
@@ -364,6 +365,7 @@ void wifiStop()
     // Display the heap state
     reportHeapNow();
 #endif // COMPILE_WIFI
+#endif // COMPILE_WEBSERVER
 }
 
 bool wifiIsConnected()
@@ -437,6 +439,7 @@ bool wifiConnect(unsigned long timeout)
     int wifiResponse = wifiMulti.run(timeout);
     if (wifiResponse == WL_CONNECTED)
     {
+      /*
         if (settings.enableTcpClient == true || settings.enableTcpServer == true)
         {
             if (settings.mdnsEnable == true)
@@ -447,6 +450,7 @@ bool wifiConnect(unsigned long timeout)
                     MDNS.addService("http", "tcp", settings.wifiTcpPort); // Add service to MDNS
             }
         }
+        */
 
         systemPrintln();
         return true;
@@ -473,9 +477,7 @@ bool wifiIsNeeded()
     if (settings.enableTcpServer == true)
         needed = true;
 
-    // Handle WiFi within systemStates
-    if (systemState <= STATE_ROVER_RTK_FIX && settings.enableNtripClient == true)
-        needed = true;
+
 
 
 

@@ -1,5 +1,6 @@
 // Check to see if we've received serial over USB
 // Report status if ~ received, otherwise present config menu
+#ifdef COMPILE_MENUS
 void updateSerial()
 {
     if (systemAvailable())
@@ -26,7 +27,7 @@ void menuMain()
     {
         systemPrintln();
         char versionString[21];
-        getFirmwareVersion(versionString, sizeof(versionString), true);
+        //getFirmwareVersion(versionString, sizeof(versionString), true);
         systemPrintf("SparkFun RTK %s %s\r\n", platformPrefix, versionString);
 
 #ifdef COMPILE_BT
@@ -43,15 +44,13 @@ void menuMain()
 
         systemPrintln("2) Configure GNSS Messages");
 
-        systemPrintln("4) Configure Ports");
+        //systemPrintln("4) Configure Ports");
 
 #ifdef COMPILE_WIFI
         systemPrintln("6) Configure WiFi");
 #else  // COMPILE_WIFI
         systemPrintln("6) **WiFi Not Compiled**");
 #endif // COMPILE_WIFI
-
-        systemPrintln("p) Configure User Profiles");
 
 #ifdef COMPILE_ESPNOW
         systemPrintln("r) Configure Radios");
@@ -61,7 +60,6 @@ void menuMain()
 
         systemPrintln("s) Configure System");
 
-        systemPrintln("f) Firmware upgrade");
 
         if (btPrintEcho)
             systemPrintln("b) Exit Bluetooth Echo mode");
@@ -72,10 +70,8 @@ void menuMain()
 
         if (incoming == 1)
             menuGNSS();
-        else if (incoming == 2)
-            menuMessages();
         else if (incoming == 4)
-            menuPorts();
+            menuWiFi();
         else if (incoming == 6)
             menuWiFi();
         else if (incoming == 's')
@@ -85,8 +81,7 @@ void menuMain()
         else if (incoming == 'r')
             menuRadio();
 #endif // COMPILE_ESPNOW
-        else if (incoming == 'f')
-            menuFirmware();
+
         else if (incoming == 'b')
         {
             printEndpoint = PRINT_ENDPOINT_SERIAL;
@@ -120,6 +115,7 @@ void menuMain()
     btPrintEchoExit = false; // We are out of the menu system
     inMainMenu = false;
 }
+#endif //COMPILE_MENUS
 
 // Change system wide settings based on current user profile
 // Ways to change the ZED settings:
@@ -129,163 +125,12 @@ void menuMain()
 // AP - once new settings are parsed, set updateZEDSettings = true
 // Setup button -
 // Factory reset - updatesZEDSettings = true by default
-void menuUserProfiles()
-{
-    uint8_t originalProfileNumber = profileNumber;
-
-    bool forceReset =
-        false; // If we reset a profile to default, the profile number has not changed, but we still need to reset
-
-    while (1)
-    {
-        systemPrintln();
-        systemPrintln("Menu: User Profiles");
-
-        // List available profiles
-        for (int x = 0; x < MAX_PROFILE_COUNT; x++)
-        {
-            if (activeProfiles & (1 << x))
-                systemPrintf("%d) Select %s", x + 1, profileNames[x]);
-            else
-                systemPrintf("%d) Select (Empty)", x + 1);
-
-            if (x == profileNumber)
-                systemPrint(" <- Current");
-
-            systemPrintln();
-        }
-
-        systemPrintf("%d) Edit profile name: %s\r\n", MAX_PROFILE_COUNT + 1, profileNames[profileNumber]);
-
-        systemPrintf("%d) Set profile '%s' to factory defaults\r\n", MAX_PROFILE_COUNT + 2,
-                     profileNames[profileNumber]);
-
-        systemPrintf("%d) Delete profile '%s'\r\n", MAX_PROFILE_COUNT + 3, profileNames[profileNumber]);
-
-        systemPrintln("x) Exit");
-
-        int incoming = getNumber(); // Returns EXIT, TIMEOUT, or long
-
-        if (incoming >= 1 && incoming <= MAX_PROFILE_COUNT)
-        {
-            changeProfileNumber(incoming - 1); // Align inputs to array
-        }
-        else if (incoming == MAX_PROFILE_COUNT + 1)
-        {
-            systemPrint("Enter new profile name: ");
-            getString(settings.profileName, sizeof(settings.profileName));
-            recordSystemSettings(); // We need to update this immediately in case user lists the available profiles
-                                    // again
-            setProfileName(profileNumber);
-        }
-        else if (incoming == MAX_PROFILE_COUNT + 2)
-        {
-            systemPrintf("\r\nReset profile '%s' to factory defaults. Press 'y' to confirm:",
-                         profileNames[profileNumber]);
-            byte bContinue = getCharacterNumber();
-            if (bContinue == 'y')
-            {
-                settingsToDefaults(); // Overwrite our current settings with defaults
-
-                recordSystemSettings(); // Overwrite profile file and NVM with these settings
-
-                // Get bitmask of active profiles
-                activeProfiles = loadProfileNames();
-
-                forceReset = true; // Upon exit of menu, reset the device
-            }
-            else
-                systemPrintln("Reset aborted");
-        }
-        else if (incoming == MAX_PROFILE_COUNT + 3)
-        {
-            systemPrintf("\r\nDelete profile '%s'. Press 'y' to confirm:", profileNames[profileNumber]);
-            byte bContinue = getCharacterNumber();
-            if (bContinue == 'y')
-            {
-                // Remove profile from LittleFS
-                if (LittleFS.exists(settingsFileName))
-                    LittleFS.remove(settingsFileName);
-
-
-                recordProfileNumber(0); // Move to Profile1
-                profileNumber = 0;
-
-                snprintf(settingsFileName, sizeof(settingsFileName), "/%s_Settings_%d.txt", platformFilePrefix,
-                         profileNumber); // Update file name with new profileNumber
-
-                // We need to load these settings from file so that we can record a profile name change correctly
-                bool responseLFS = loadSystemSettingsFromFileLFS(settingsFileName, &settings);
-
-
-                // If this is an empty/new profile slot, overwrite our current settings with defaults
-                if (responseLFS == false)
-                {
-                    settingsToDefaults();
-                }
-
-                // Get bitmask of active profiles
-                activeProfiles = loadProfileNames();
-            }
-            else
-                systemPrintln("Delete aborted");
-        }
-
-        else if (incoming == INPUT_RESPONSE_GETNUMBER_EXIT)
-            break;
-        else if (incoming == INPUT_RESPONSE_GETNUMBER_TIMEOUT)
-            break;
-        else
-            printUnknown(incoming);
-    }
-
-    if (originalProfileNumber != profileNumber || forceReset == true)
-    {
-        systemPrintln("Rebooting to apply new profile settings. Goodbye!");
-        delay(2000);
-        ESP.restart();
-    }
-
-    // A user may edit the name of a profile, but then switch back to original profile.
-    // Thus, no reset, and activeProfiles is not updated. Do it here.
-    // Get bitmask of active profiles
-    activeProfiles = loadProfileNames();
-
-    clearBuffer(); // Empty buffer of any newline chars
-}
-
-// Change the active profile number, without unit reset
-void changeProfileNumber(byte newProfileNumber)
-{
-    settings.updateZEDSettings = true; // When this profile is loaded next, force system to update ZED settings.
-    recordSystemSettings();            // Before switching, we need to record the current settings to LittleFS and SD
-
-    recordProfileNumber(newProfileNumber);
-    profileNumber = newProfileNumber;
-    setSettingsFileName(); // Load the settings file name into memory (enabled profile name delete)
-
-    // We need to load these settings from file so that we can record a profile name change correctly
-    bool responseLFS = loadSystemSettingsFromFileLFS(settingsFileName, &settings);
-
-
-    // If this is an empty/new profile slot, overwrite our current settings with defaults
-    if (responseLFS == false)
-    {
-        systemPrintln("No profile found: Applying default settings");
-        settingsToDefaults();
-    }
-}
 
 // Erase all settings. Upon restart, unit will use defaults
 void factoryReset(bool alreadyHasSemaphore)
 {
 
     tasksStopUART2();
-
-    
-
-    systemPrintln("Formatting internal file system...");
-    LittleFS.format();
 
     if (online.gnss == true)
         theGNSS.factoryDefault(); // Reset everything: baud rate, I2C address, update rate, everything. And save to BBR.
@@ -295,6 +140,7 @@ void factoryReset(bool alreadyHasSemaphore)
     ESP.restart();
 }
 
+#ifdef COMPILE_MENUS
 // Configure the internal radio, if available
 void menuRadio()
 {
@@ -407,3 +253,4 @@ void menuRadio()
     clearBuffer(); // Empty buffer of any newline chars
 #endif             // COMPILE_ESPNOW
 }
+#endif //COMPILE_MENUS

@@ -263,14 +263,6 @@ typedef struct _PARSE_STATE
     bool computeCrc;                     // Compute the CRC when true
 } PARSE_STATE;
 
-typedef enum
-{
-    ETH_NOT_STARTED,
-    ETH_STARTED_CHECK_CABLE,
-    ETH_STARTED_START_DHCP,
-    ETH_CONNECTED,
-    ETH_CAN_NOT_BEGIN,
-} ethernetStatus_e;
 
 // Radio status LED goes from off (LED off), no connection (blinking), to connected (solid)
 typedef enum
@@ -709,8 +701,8 @@ typedef struct
     int sizeOfSettings = 0;             // sizeOfSettings **must** be the first entry and must be int
     int rtkIdentifier = RTK_IDENTIFIER; // rtkIdentifier **must** be the second entry
     bool printDebugMessages = false;
-    bool enableSD = true;
-    bool enableDisplay = true;
+    bool enableSD = false;
+    bool enableDisplay = false;
     int maxLogTime_minutes = 60 * 24;        // Default to 24 hours
     int observationSeconds = 60;             // Default survey in time of 60 seconds
     float observationPositionAccuracy = 5.0; // Default survey in pos accy of 5m
@@ -897,32 +889,6 @@ typedef struct
     char ntpReferenceId[5] = {'G', 'P', 'S', 0,
                               0}; // NTPpacket::defaultReferenceId. Ref ID is 4 chars. Add one extra for a NULL.
 
-    // NTRIP Client
-    bool enablePrintNtripClientRtcm = false;
-    bool enablePrintNtripClientState = false;
-    bool enableNtripClient = false;
-    char ntripClient_CasterHost[50] = "rtk2go.com"; // It's free...
-    uint16_t ntripClient_CasterPort = 2101;
-    char ntripClient_CasterUser[50] =
-        "test@test.com"; // Some free casters require auth. User must provide their own email address to use RTK2Go
-    char ntripClient_CasterUserPW[50] = "";
-    char ntripClient_MountPoint[50] = "bldr_SparkFun1";
-    char ntripClient_MountPointPW[50] = "";
-    bool ntripClient_TransmitGGA = true;
-
-    // NTRIP Server
-    bool enablePrintNtripServerRtcm = false;
-    bool enablePrintNtripServerState = false;
-    bool enableNtripServer = false;
-    bool ntripServer_StartAtSurveyIn = false;       // true = Start WiFi instead of Bluetooth at Survey-In
-    char ntripServer_CasterHost[50] = "rtk2go.com"; // It's free...
-    uint16_t ntripServer_CasterPort = 2101;
-    char ntripServer_CasterUser[50] =
-        "test@test.com"; // Some free casters require auth. User must provide their own email address to use RTK2Go
-    char ntripServer_CasterUserPW[50] = "";
-    char ntripServer_MountPoint[50] = "bldr_dwntwn2"; // NTRIP Server
-    char ntripServer_MountPointPW[50] = "WR5wRo4H";
-
     // TCP Client
     bool enablePrintTcpStatus = false;
     bool enableTcpClient = false;
@@ -956,8 +922,6 @@ struct struct_online
     bool tcpClient = false;
     bool tcpServer = false;
     bool tcpClientEthernet = false;
-    ethernetStatus_e ethernetStatus = ETH_NOT_STARTED;
-    bool ethernetNTPServer = false; // EthernetUDP
 } online;
 
 #ifdef COMPILE_WIFI

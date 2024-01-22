@@ -3,6 +3,7 @@
 
 bool websocketConnected = false;
 
+#ifdef COMPILE_WEBSERVER
 // Start webserver in AP mode
 void startWebServer(bool startWiFi = true, int httpPort = 80); // Header
 void startWebServer(bool startWiFi, int httpPort)
@@ -16,7 +17,7 @@ void startWebServer(bool startWiFi, int httpPort)
     if (startWiFi)
         if (wifiStartAP() == false) // Exits calling wifiConnect()
             return;
-
+/*
     if (settings.mdnsEnable == true)
     {
         if (MDNS.begin("rtk") == false) // This should make the module findable from 'rtk.local' in browser
@@ -24,13 +25,13 @@ void startWebServer(bool startWiFi, int httpPort)
         else
             MDNS.addService("http", "tcp", 80); // Add service to MDNS-SD
     }
-
+*/
     incomingSettings = (char *)malloc(AP_CONFIG_SETTING_SIZE);
     memset(incomingSettings, 0, AP_CONFIG_SETTING_SIZE);
 
     // Pre-load settings CSV
     settingsCSV = (char *)malloc(AP_CONFIG_SETTING_SIZE);
-    createSettingsString(settingsCSV);
+    
 
     webserver = new AsyncWebServer(httpPort);
     websocket = new AsyncWebSocket("/ws");
@@ -62,7 +63,7 @@ void startWebServer(bool startWiFi, int httpPort)
     webserver->onNotFound(notFound);
 
     
-
+    
     webserver->on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html, sizeof(index_html));
         response->addHeader("Content-Encoding", "gzip");
@@ -208,17 +209,9 @@ void startWebServer(bool startWiFi, int httpPort)
         request->send(response);
     });
 
-    // Handler for the /upload form POST
-    webserver->on(
-        "/upload", HTTP_POST, [](AsyncWebServerRequest *request) { request->send(200); }, handleFirmwareFileUpload);
+    
 
-    // Handler for file manager
-    webserver->on("/listfiles", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
-        systemPrintln(logmessage);
-        String files;
-        request->send(200, "text/plain", files);
-    });
+
 
     // Handler for supported messages list
     webserver->on("/listMessages", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -229,17 +222,9 @@ void startWebServer(bool startWiFi, int httpPort)
         request->send(200, "text/plain", messages);
     });
 
-    // Handler for supported RTCM/Base messages list
-    webserver->on("/listMessagesBase", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
-        systemPrintln(logmessage);
-        String messageList;
-        createMessageListBase(messageList);
-        request->send(200, "text/plain", messageList);
-    });
 
-    // Handler for file manager
-    webserver->on("/file", HTTP_GET, [](AsyncWebServerRequest *request) { handleFileManager(request); });
+
+    
 
     webserver->begin();
 
@@ -298,140 +283,7 @@ void notFound(AsyncWebServerRequest *request)
 #endif  // COMPILE_AP
 #endif  // COMPILE_WIFI
 
-// Handler for firmware file downloads
-#ifdef COMPILE_WIFI
-#ifdef COMPILE_AP
-static void handleFileManager(AsyncWebServerRequest *request)
-{
-    // This section does not tolerate semaphore transactions
-    String logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url();
 
-    if (request->hasParam("name") && request->hasParam("action"))
-    {
-        const char *fileName = request->getParam("name")->value().c_str();
-        const char *fileAction = request->getParam("action")->value().c_str();
-
-        logmessage = "Client:" + request->client()->remoteIP().toString() + " " + request->url() +
-                     "?name=" + String(fileName) + "&action=" + String(fileAction);
-
-        char slashFileName[60];
-        snprintf(slashFileName, sizeof(slashFileName), "/%s", request->getParam("name")->value().c_str());
-
-        bool fileExists;
-        if (USE_SPI_MICROSD)
-        {
-            fileExists = sd->exists(slashFileName);
-        }
-
-
-        if (fileExists == false)
-        {
-            systemPrintln(logmessage + " ERROR: file does not exist");
-            request->send(400, "text/plain", "ERROR: file does not exist");
-        }
-        else
-        {
-            systemPrintln("Not supported ~SWR");
-        }
-    }
-    else
-    {
-        request->send(400, "text/plain", "ERROR: name and action params required");
-    }
-}
-#endif  // COMPILE_AP
-#endif  // COMPILE_WIFI
-
-// Handler for firmware file upload
-#ifdef COMPILE_WIFI
-#ifdef COMPILE_AP
-static void handleFirmwareFileUpload(AsyncWebServerRequest *request, String fileName, size_t index, uint8_t *data,
-                                     size_t len, bool final)
-{
-    if (!index)
-    {
-        // Check file name against valid firmware names
-        const char *BIN_EXT = "bin";
-        const char *BIN_HEADER = "RTK_Surveyor_Firmware";
-
-        int fnameLen = fileName.length();
-        char fname[fnameLen + 2] = {'/'}; // Filename must start with / or VERY bad things happen on SD_MMC
-        fileName.toCharArray(&fname[1], fnameLen + 1);
-        fname[fnameLen + 1] = '\0'; // Terminate array
-
-        // Check 'bin' extension
-        if (strcmp(BIN_EXT, &fname[strlen(fname) - strlen(BIN_EXT)]) == 0)
-        {
-            // Check for 'RTK_Surveyor_Firmware' start of file name
-            if (strncmp(fname, BIN_HEADER, strlen(BIN_HEADER)) == 0)
-            {
-                // Begin update process
-                if (!Update.begin(UPDATE_SIZE_UNKNOWN))
-                {
-                    Update.printError(Serial);
-                    return request->send(400, "text/plain", "OTA could not begin");
-                }
-            }
-            else
-            {
-                systemPrintf("Unknown: %s\r\n", fname);
-                return request->send(400, "text/html", "<b>Error:</b> Unknown file type");
-            }
-        }
-        else
-        {
-            systemPrintf("Unknown: %s\r\n", fname);
-            return request->send(400, "text/html", "<b>Error:</b> Unknown file type");
-        }
-    }
-
-    // Write chunked data to the free sketch space
-    if (len)
-    {
-        if (Update.write(data, len) != len)
-            return request->send(400, "text/plain", "OTA could not begin");
-        else
-        {
-            binBytesSent += len;
-
-            // Send an update to browser every 100k
-            if (binBytesSent - binBytesLastUpdate > 100000)
-            {
-                binBytesLastUpdate = binBytesSent;
-
-                char bytesSentMsg[100];
-                snprintf(bytesSentMsg, sizeof(bytesSentMsg), "%'d bytes sent", binBytesSent);
-
-                systemPrintf("bytesSentMsg: %s\r\n", bytesSentMsg);
-
-                char statusMsg[200] = {'\0'};
-                stringRecord(statusMsg, "firmwareUploadStatus",
-                             bytesSentMsg); // Convert to "firmwareUploadMsg,11214 bytes sent,"
-
-                systemPrintf("msg: %s\r\n", statusMsg);
-                websocket->textAll(statusMsg);
-            }
-        }
-    }
-
-    if (final)
-    {
-        if (!Update.end(true))
-        {
-            Update.printError(Serial);
-            return request->send(400, "text/plain", "Could not end OTA");
-        }
-        else
-        {
-            websocket->textAll("firmwareUploadComplete,1,");
-            systemPrintln("Firmware update complete. Restarting");
-            delay(500);
-            ESP.restart();
-        }
-    }
-}
-#endif  // COMPILE_AP
-#endif  // COMPILE_WIFI
 
 // Events triggered by web sockets
 #ifdef COMPILE_WIFI
@@ -452,7 +304,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
         log_d("Websocket client disconnected");
 
         // User has either refreshed the page or disconnected. Recompile the current settings.
-        createSettingsString(settingsCSV);
+        
         websocketConnected = false;
     }
     else if (type == WS_EVT_DATA)
@@ -473,337 +325,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 #endif  // COMPILE_AP
 #endif  // COMPILE_WIFI
 
-// Create a csv string with current settings
-void createSettingsString(char *newSettings)
-{
-#ifdef COMPILE_AP
-    char tagText[32];
-    char nameText[64];
 
-    newSettings[0] = '\0'; // Erase current settings string
-
-    // System Info
-    stringRecord(newSettings, "platformPrefix", platformPrefix);
-
-    char apRtkFirmwareVersion[86];
-    getFirmwareVersion(apRtkFirmwareVersion, sizeof(apRtkFirmwareVersion), true);
-    stringRecord(newSettings, "rtkFirmwareVersion", apRtkFirmwareVersion);
-
-    if (!configureViaEthernet) // ZED type is unknown if we are in configure-via-ethernet mode
-    {
-        char apZedPlatform[50];
-        if (zedModuleType == PLATFORM_F9P)
-            strcpy(apZedPlatform, "ZED-F9P");
-        else if (zedModuleType == PLATFORM_F9R)
-            strcpy(apZedPlatform, "ZED-F9R");
-
-        char apZedFirmwareVersion[80];
-        snprintf(apZedFirmwareVersion, sizeof(apZedFirmwareVersion), "%s Firmware: %s ID: %s", apZedPlatform,
-                 zedFirmwareVersion, zedUniqueId);
-        stringRecord(newSettings, "zedFirmwareVersion", apZedFirmwareVersion);
-        stringRecord(newSettings, "zedFirmwareVersionInt", zedFirmwareVersionInt);
-    }
-    else
-    {
-        char apZedFirmwareVersion[80];
-        snprintf(apZedFirmwareVersion, sizeof(apZedFirmwareVersion), "ZED-F9: Unknown");
-        stringRecord(newSettings, "zedFirmwareVersion", apZedFirmwareVersion);
-    }
-
-    char apDeviceBTID[30];
-    snprintf(apDeviceBTID, sizeof(apDeviceBTID), "Device Bluetooth ID: %02X%02X", btMACAddress[4], btMACAddress[5]);
-    stringRecord(newSettings, "deviceBTID", apDeviceBTID);
-
-    // GNSS Config
-    stringRecord(newSettings, "measurementRateHz", 1000.0 / settings.measurementRate, 2); // 2 = decimals to print
-    stringRecord(newSettings, "dynamicModel", settings.dynamicModel);
-    stringRecord(newSettings, "ubxConstellationsGPS", settings.ubxConstellations[0].enabled);     // GPS
-    stringRecord(newSettings, "ubxConstellationsSBAS", settings.ubxConstellations[1].enabled);    // SBAS
-    stringRecord(newSettings, "ubxConstellationsGalileo", settings.ubxConstellations[2].enabled); // Galileo
-    stringRecord(newSettings, "ubxConstellationsBeiDou", settings.ubxConstellations[3].enabled);  // BeiDou
-    stringRecord(newSettings, "ubxConstellationsGLONASS", settings.ubxConstellations[5].enabled); // GLONASS
-
-    // Base Config
-    stringRecord(newSettings, "baseTypeSurveyIn", !settings.fixedBase);
-    stringRecord(newSettings, "baseTypeFixed", settings.fixedBase);
-    stringRecord(newSettings, "observationSeconds", settings.observationSeconds);
-    stringRecord(newSettings, "observationPositionAccuracy", settings.observationPositionAccuracy, 2);
-
-    if (settings.fixedBaseCoordinateType == COORD_TYPE_ECEF)
-    {
-        stringRecord(newSettings, "fixedBaseCoordinateTypeECEF", true);
-        stringRecord(newSettings, "fixedBaseCoordinateTypeGeo", false);
-    }
-    else
-    {
-        stringRecord(newSettings, "fixedBaseCoordinateTypeECEF", false);
-        stringRecord(newSettings, "fixedBaseCoordinateTypeGeo", true);
-    }
-
-    stringRecord(newSettings, "fixedEcefX", settings.fixedEcefX, 3);
-    stringRecord(newSettings, "fixedEcefY", settings.fixedEcefY, 3);
-    stringRecord(newSettings, "fixedEcefZ", settings.fixedEcefZ, 3);
-    stringRecord(newSettings, "fixedLat", settings.fixedLat, haeNumberOfDecimals);
-    stringRecord(newSettings, "fixedLong", settings.fixedLong, haeNumberOfDecimals);
-    stringRecord(newSettings, "fixedAltitude", settings.fixedAltitude, 4);
-
-    stringRecord(newSettings, "enableNtripServer", settings.enableNtripServer);
-    stringRecord(newSettings, "ntripServer_CasterHost", settings.ntripServer_CasterHost);
-    stringRecord(newSettings, "ntripServer_CasterPort", settings.ntripServer_CasterPort);
-    stringRecord(newSettings, "ntripServer_CasterUser", settings.ntripServer_CasterUser);
-    stringRecord(newSettings, "ntripServer_CasterUserPW", settings.ntripServer_CasterUserPW);
-    stringRecord(newSettings, "ntripServer_MountPoint", settings.ntripServer_MountPoint);
-    stringRecord(newSettings, "ntripServer_MountPointPW", settings.ntripServer_MountPointPW);
-
-    stringRecord(newSettings, "enableNtripClient", settings.enableNtripClient);
-    stringRecord(newSettings, "ntripClient_CasterHost", settings.ntripClient_CasterHost);
-    stringRecord(newSettings, "ntripClient_CasterPort", settings.ntripClient_CasterPort);
-    stringRecord(newSettings, "ntripClient_CasterUser", settings.ntripClient_CasterUser);
-    stringRecord(newSettings, "ntripClient_CasterUserPW", settings.ntripClient_CasterUserPW);
-    stringRecord(newSettings, "ntripClient_MountPoint", settings.ntripClient_MountPoint);
-    stringRecord(newSettings, "ntripClient_MountPointPW", settings.ntripClient_MountPointPW);
-    stringRecord(newSettings, "ntripClient_TransmitGGA", settings.ntripClient_TransmitGGA);
-
-    // Sensor Fusion Config
-    stringRecord(newSettings, "enableSensorFusion", settings.enableSensorFusion);
-    stringRecord(newSettings, "autoIMUmountAlignment", settings.autoIMUmountAlignment);
-
-    // System Config
-    stringRecord(newSettings, "enableUART2UBXIn", settings.enableUART2UBXIn);
-    stringRecord(newSettings, "enableLogging", settings.enableLogging);
-    stringRecord(newSettings, "enableARPLogging", settings.enableARPLogging);
-    stringRecord(newSettings, "ARPLoggingInterval", settings.ARPLoggingInterval_s);
-    stringRecord(newSettings, "maxLogTime_minutes", settings.maxLogTime_minutes);
-    stringRecord(newSettings, "maxLogLength_minutes", settings.maxLogLength_minutes);
-
-    char sdCardSizeChar[20];
-    String cardSize;
-    stringHumanReadableSize(cardSize, sdCardSize);
-    cardSize.toCharArray(sdCardSizeChar, sizeof(sdCardSizeChar));
-    char sdFreeSpaceChar[20];
-    String freeSpace;
-    stringHumanReadableSize(freeSpace, sdFreeSpace);
-    freeSpace.toCharArray(sdFreeSpaceChar, sizeof(sdFreeSpaceChar));
-
-    stringRecord(newSettings, "sdFreeSpace", sdFreeSpaceChar);
-    stringRecord(newSettings, "sdSize", sdCardSizeChar);
-
-    stringRecord(newSettings, "enableResetDisplay", settings.enableResetDisplay);
-
-    // Ethernet
-    stringRecord(newSettings, "ethernetDHCP", settings.ethernetDHCP);
-    char ipAddressChar[20];
-    snprintf(ipAddressChar, sizeof(ipAddressChar), "%s", settings.ethernetIP.toString().c_str());
-    stringRecord(newSettings, "ethernetIP", ipAddressChar);
-    snprintf(ipAddressChar, sizeof(ipAddressChar), "%s", settings.ethernetDNS.toString().c_str());
-    stringRecord(newSettings, "ethernetDNS", ipAddressChar);
-    snprintf(ipAddressChar, sizeof(ipAddressChar), "%s", settings.ethernetGateway.toString().c_str());
-    stringRecord(newSettings, "ethernetGateway", ipAddressChar);
-    snprintf(ipAddressChar, sizeof(ipAddressChar), "%s", settings.ethernetSubnet.toString().c_str());
-    stringRecord(newSettings, "ethernetSubnet", ipAddressChar);
-    stringRecord(newSettings, "ethernetHttpPort", settings.ethernetHttpPort);
-    stringRecord(newSettings, "ethernetNtpPort", settings.ethernetNtpPort);
-    stringRecord(newSettings, "enableTcpClientEthernet", settings.enableTcpClientEthernet);
-    stringRecord(newSettings, "ethernetTcpPort", settings.ethernetTcpPort);
-    stringRecord(newSettings, "hostForTCPClient", settings.hostForTCPClient);
-
-    // NTP
-    stringRecord(newSettings, "ntpPollExponent", settings.ntpPollExponent);
-    stringRecord(newSettings, "ntpPrecision", settings.ntpPrecision);
-    stringRecord(newSettings, "ntpRootDelay", settings.ntpRootDelay);
-    stringRecord(newSettings, "ntpRootDispersion", settings.ntpRootDispersion);
-    stringRecord(newSettings, "ntpPollExponent", settings.ntpPollExponent);
-    char ntpRefId[5];
-    snprintf(ntpRefId, sizeof(ntpRefId), "%s", settings.ntpReferenceId);
-    stringRecord(newSettings, "ntpReferenceId", ntpRefId);
-
-    // Turn on SD display block last
-    stringRecord(newSettings, "sdMounted", online.microSD);
-
-    // Port Config
-    stringRecord(newSettings, "dataPortBaud", settings.dataPortBaud);
-    stringRecord(newSettings, "radioPortBaud", settings.radioPortBaud);
-    stringRecord(newSettings, "dataPortChannel", settings.dataPortChannel);
-
-    // L-Band
-    char hardwareID[13];
-    snprintf(hardwareID, sizeof(hardwareID), "%02X%02X%02X%02X%02X%02X", lbandMACAddress[0], lbandMACAddress[1],
-             lbandMACAddress[2], lbandMACAddress[3], lbandMACAddress[4], lbandMACAddress[5]);
-    stringRecord(newSettings, "hardwareID", hardwareID);
-
-    char apDaysRemaining[20];
-    if (strlen(settings.pointPerfectCurrentKey) > 0)
-    {
-#ifdef COMPILE_L_BAND
-        int daysRemaining = daysFromEpoch(settings.pointPerfectNextKeyStart + settings.pointPerfectNextKeyDuration + 1);
-        snprintf(apDaysRemaining, sizeof(apDaysRemaining), "%d", daysRemaining);
-#endif  // COMPILE_L_BAND
-    }
-    else
-        snprintf(apDaysRemaining, sizeof(apDaysRemaining), "No Keys");
-
-    stringRecord(newSettings, "daysRemaining", apDaysRemaining);
-
-    stringRecord(newSettings, "pointPerfectDeviceProfileToken", settings.pointPerfectDeviceProfileToken);
-    stringRecord(newSettings, "enablePointPerfectCorrections", settings.enablePointPerfectCorrections);
-    stringRecord(newSettings, "autoKeyRenewal", settings.autoKeyRenewal);
-
-    // External PPS/Triggers
-    stringRecord(newSettings, "enableExternalPulse", settings.enableExternalPulse);
-    stringRecord(newSettings, "externalPulseTimeBetweenPulse_us", settings.externalPulseTimeBetweenPulse_us);
-    stringRecord(newSettings, "externalPulseLength_us", settings.externalPulseLength_us);
-    stringRecord(newSettings, "externalPulsePolarity", settings.externalPulsePolarity);
-    stringRecord(newSettings, "enableExternalHardwareEventLogging", settings.enableExternalHardwareEventLogging);
-
-    // Profiles
-    stringRecord(
-        newSettings, "profileName",
-        profileNames[profileNumber]); // Must come before profile number so AP config page JS has name before number
-    stringRecord(newSettings, "profileNumber", profileNumber);
-    for (int index = 0; index < MAX_PROFILE_COUNT; index++)
-    {
-        snprintf(tagText, sizeof(tagText), "profile%dName", index);
-        snprintf(nameText, sizeof(nameText), "%d: %s", index + 1, profileNames[index]);
-        stringRecord(newSettings, tagText, nameText);
-    }
-    // stringRecord(newSettings, "activeProfiles", activeProfiles);
-
-    // System state at power on. Convert various system states to either Rover or Base or NTP.
-    int lastState; // 0 = Rover, 1 = Base, 2 = NTP
-    lastState = 0; // Default Rover
-
-    stringRecord(newSettings, "baseRoverSetup", lastState);
-
-    // Bluetooth radio type
-    stringRecord(newSettings, "bluetoothRadioType", settings.bluetoothRadioType);
-
-    // Current coordinates come from HPPOSLLH call back
-    stringRecord(newSettings, "geodeticLat", latitude, haeNumberOfDecimals);
-    stringRecord(newSettings, "geodeticLon", longitude, haeNumberOfDecimals);
-    stringRecord(newSettings, "geodeticAlt", altitude, 3);
-
-    double ecefX = 0;
-    double ecefY = 0;
-    double ecefZ = 0;
-
-    geodeticToEcef(latitude, longitude, altitude, &ecefX, &ecefY, &ecefZ);
-
-    stringRecord(newSettings, "ecefX", ecefX, 3);
-    stringRecord(newSettings, "ecefY", ecefY, 3);
-    stringRecord(newSettings, "ecefZ", ecefZ, 3);
-
-    // Antenna height and ARP
-    stringRecord(newSettings, "antennaHeight", settings.antennaHeight);
-    stringRecord(newSettings, "antennaReferencePoint", settings.antennaReferencePoint, 1);
-
-    // Radio / ESP-Now settings
-    char radioMAC[18]; // Send radio MAC
-    snprintf(radioMAC, sizeof(radioMAC), "%02X:%02X:%02X:%02X:%02X:%02X", wifiMACAddress[0], wifiMACAddress[1],
-             wifiMACAddress[2], wifiMACAddress[3], wifiMACAddress[4], wifiMACAddress[5]);
-    stringRecord(newSettings, "radioMAC", radioMAC);
-    stringRecord(newSettings, "radioType", settings.radioType);
-    stringRecord(newSettings, "espnowPeerCount", settings.espnowPeerCount);
-    for (int index = 0; index < settings.espnowPeerCount; index++)
-    {
-        snprintf(tagText, sizeof(tagText), "peerMAC%d", index);
-        snprintf(nameText, sizeof(nameText), "%02X:%02X:%02X:%02X:%02X:%02X", settings.espnowPeers[index][0],
-                 settings.espnowPeers[index][1], settings.espnowPeers[index][2], settings.espnowPeers[index][3],
-                 settings.espnowPeers[index][4], settings.espnowPeers[index][5]);
-        stringRecord(newSettings, tagText, nameText);
-    }
-    stringRecord(newSettings, "espnowBroadcast", settings.espnowBroadcast);
-
-    stringRecord(newSettings, "logFileName", logFileName);
-
-    if (HAS_NO_BATTERY) // Ref Stn does not have a battery
-    {
-        stringRecord(newSettings, "batteryIconFileName", (char *)"src/BatteryBlank.png");
-        stringRecord(newSettings, "batteryPercent", (char *)" ");
-    }
-    else
-    {
-        // Determine battery icon
-        int iconLevel = 0;
-        if (battLevel < 25)
-            iconLevel = 0;
-        else if (battLevel < 50)
-            iconLevel = 1;
-        else if (battLevel < 75)
-            iconLevel = 2;
-        else // batt level > 75
-            iconLevel = 3;
-
-        char batteryIconFileName[sizeof("src/Battery2_Charging.png__")]; // sizeof() includes 1 for \0 termination
-
-        if (externalPowerConnected)
-            snprintf(batteryIconFileName, sizeof(batteryIconFileName), "src/Battery%d_Charging.png", iconLevel);
-        else
-            snprintf(batteryIconFileName, sizeof(batteryIconFileName), "src/Battery%d.png", iconLevel);
-
-        stringRecord(newSettings, "batteryIconFileName", batteryIconFileName);
-
-        // Determine battery percent
-        char batteryPercent[sizeof("+100%__")];
-        int tempLevel = battLevel;
-        if (tempLevel > 100)
-            tempLevel = 100;
-
-        if (externalPowerConnected)
-            snprintf(batteryPercent, sizeof(batteryPercent), "+%d%%", tempLevel);
-        else
-            snprintf(batteryPercent, sizeof(batteryPercent), "%d%%", tempLevel);
-        stringRecord(newSettings, "batteryPercent", batteryPercent);
-    }
-
-    stringRecord(newSettings, "minElev", settings.minElev);
-    stringRecord(newSettings, "imuYaw", settings.imuYaw);
-    stringRecord(newSettings, "imuPitch", settings.imuPitch);
-    stringRecord(newSettings, "imuRoll", settings.imuRoll);
-    stringRecord(newSettings, "sfDisableWheelDirection", settings.sfDisableWheelDirection);
-    stringRecord(newSettings, "sfCombineWheelTicks", settings.sfCombineWheelTicks);
-    stringRecord(newSettings, "rateNavPrio", settings.rateNavPrio);
-    stringRecord(newSettings, "sfUseSpeed", settings.sfUseSpeed);
-    stringRecord(newSettings, "coordinateInputType", settings.coordinateInputType);
-    // stringRecord(newSettings, "lbandFixTimeout_seconds", settings.lbandFixTimeout_seconds);
-
-    if (zedModuleType == PLATFORM_F9R)
-        stringRecord(newSettings, "minCNO", settings.minCNO_F9R);
-    else
-        stringRecord(newSettings, "minCNO", settings.minCNO_F9P);
-
-    stringRecord(newSettings, "mdnsEnable", settings.mdnsEnable);
-
-    
-
-    
-
-    // Add WiFi credential table
-    for (int x = 0; x < MAX_WIFI_NETWORKS; x++)
-    {
-        snprintf(tagText, sizeof(tagText), "wifiNetwork%dSSID", x);
-        stringRecord(newSettings, tagText, settings.wifiNetworks[x].ssid);
-
-        snprintf(tagText, sizeof(tagText), "wifiNetwork%dPassword", x);
-        stringRecord(newSettings, tagText, settings.wifiNetworks[x].password);
-    }
-
-    // Drop downs on the AP config page expect a value, whereas bools get stringRecord as true/false
-    if (settings.wifiConfigOverAP == true)
-        stringRecord(newSettings, "wifiConfigOverAP", 1); // 1 = AP mode, 0 = WiFi
-    else
-        stringRecord(newSettings, "wifiConfigOverAP", 0); // 1 = AP mode, 0 = WiFi
-
-    stringRecord(newSettings, "wifiTcpPort", settings.wifiTcpPort);
-    stringRecord(newSettings, "enableRCFirmware", enableRCFirmware);
-
-    // New settings not yet integrated
-    //...
-
-    strcat(newSettings, "\0");
-    systemPrintf("newSettings len: %d\r\n", strlen(newSettings));
-    systemPrintf("newSettings: %s\r\n", newSettings);
-#endif  // COMPILE_AP
-}
 
 // Create a csv string with the dynamic data to update (current coordinates, battery level, etc)
 void createDynamicDataString(char *settingsCSV)
@@ -961,43 +483,8 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
         settings.externalPulsePolarity = (pulseEdgeType_e)settingValue;
     else if (strcmp(settingName, "enableExternalHardwareEventLogging") == 0)
         settings.enableExternalHardwareEventLogging = settingValueBool;
-    else if (strcmp(settingName, "profileName") == 0)
-    {
-        strcpy(settings.profileName, settingValueStr);
-        setProfileName(profileNumber); // Copy the current settings.profileName into the array of profile names at
-                                       // location profileNumber
-    }
-    else if (strcmp(settingName, "enableNtripServer") == 0)
-        settings.enableNtripServer = settingValueBool;
-    else if (strcmp(settingName, "ntripServer_CasterHost") == 0)
-        strcpy(settings.ntripServer_CasterHost, settingValueStr);
-    else if (strcmp(settingName, "ntripServer_CasterPort") == 0)
-        settings.ntripServer_CasterPort = settingValue;
-    else if (strcmp(settingName, "ntripServer_CasterUser") == 0)
-        strcpy(settings.ntripServer_CasterUser, settingValueStr);
-    else if (strcmp(settingName, "ntripServer_CasterUserPW") == 0)
-        strcpy(settings.ntripServer_CasterUserPW, settingValueStr);
-    else if (strcmp(settingName, "ntripServer_MountPoint") == 0)
-        strcpy(settings.ntripServer_MountPoint, settingValueStr);
-    else if (strcmp(settingName, "ntripServer_MountPointPW") == 0)
-        strcpy(settings.ntripServer_MountPointPW, settingValueStr);
 
-    else if (strcmp(settingName, "enableNtripClient") == 0)
-        settings.enableNtripClient = settingValueBool;
-    else if (strcmp(settingName, "ntripClient_CasterHost") == 0)
-        strcpy(settings.ntripClient_CasterHost, settingValueStr);
-    else if (strcmp(settingName, "ntripClient_CasterPort") == 0)
-        settings.ntripClient_CasterPort = settingValue;
-    else if (strcmp(settingName, "ntripClient_CasterUser") == 0)
-        strcpy(settings.ntripClient_CasterUser, settingValueStr);
-    else if (strcmp(settingName, "ntripClient_CasterUserPW") == 0)
-        strcpy(settings.ntripClient_CasterUserPW, settingValueStr);
-    else if (strcmp(settingName, "ntripClient_MountPoint") == 0)
-        strcpy(settings.ntripClient_MountPoint, settingValueStr);
-    else if (strcmp(settingName, "ntripClient_MountPointPW") == 0)
-        strcpy(settings.ntripClient_MountPointPW, settingValueStr);
-    else if (strcmp(settingName, "ntripClient_TransmitGGA") == 0)
-        settings.ntripClient_TransmitGGA = settingValueBool;
+
 
     else if (strcmp(settingName, "serialTimeoutGNSS") == 0)
         settings.serialTimeoutGNSS = settingValue;
@@ -1185,48 +672,7 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
 
         ESP.restart();
     }
-    else if (strcmp(settingName, "setProfile") == 0)
-    {
-        // Change to new profile
-        log_d("Changing to profile number %d\r\n", settingValue);
-        changeProfileNumber(settingValue);
 
-        // Load new profile into system
-        loadSettings();
-
-        // Send new settings to browser. Re-use settingsCSV to avoid stack.
-        if (settingsCSV == nullptr)
-            settingsCSV = (char *)malloc(AP_CONFIG_SETTING_SIZE);
-
-        memset(settingsCSV, 0, AP_CONFIG_SETTING_SIZE); // Clear any garbage from settings array
-
-        createSettingsString(settingsCSV);
-
-        log_d("Sending profile %d\r\n", settingValue);
-        log_d("Profile contents: %s", settingsCSV);
-        websocket->textAll(settingsCSV);
-    }
-    else if (strcmp(settingName, "resetProfile") == 0)
-    {
-        settingsToDefaults(); // Overwrite our current settings with defaults
-
-        recordSystemSettings(); // Overwrite profile file and NVM with these settings
-
-        // Get bitmask of active profiles
-        activeProfiles = loadProfileNames();
-
-        // Send new settings to browser. Re-use settingsCSV to avoid stack.
-        if (settingsCSV == nullptr)
-            settingsCSV = (char *)malloc(AP_CONFIG_SETTING_SIZE);
-
-        memset(settingsCSV, 0, AP_CONFIG_SETTING_SIZE); // Clear any garbage from settings array
-
-        createSettingsString(settingsCSV);
-
-        log_d("Sending reset profile %d\r\n", settingValue);
-        log_d("Profile contents: %s", settingsCSV);
-        websocket->textAll(settingsCSV);
-    }
     else if (strcmp(settingName, "forgetEspNowPeers") == 0)
     {
         // Forget all ESP-Now Peers
@@ -1235,53 +681,7 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
         settings.espnowPeerCount = 0;
     }
     
-    else if (strcmp(settingName, "checkNewFirmware") == 0)
-    {
-        log_d("Checking for new OTA Pull firmware");
 
-        websocket->textAll("checkingNewFirmware,1,"); // Tell the config page we received their request
-
-        char reportedVersion[20];
-        char newVersionCSV[100];
-
-        // Get firmware version from server
-        if (otaCheckVersion(reportedVersion, sizeof(reportedVersion)))
-        {
-            // We got a version number, now determine if it's newer or not
-            char currentVersion[21];
-            getFirmwareVersion(currentVersion, sizeof(currentVersion), enableRCFirmware);
-            if (isReportedVersionNewer(reportedVersion, currentVersion) == true)
-            {
-                log_d("New version detected");
-                snprintf(newVersionCSV, sizeof(newVersionCSV), "newFirmwareVersion,%s,", reportedVersion);
-            }
-            else
-            {
-                log_d("No new firmware available");
-                snprintf(newVersionCSV, sizeof(newVersionCSV), "newFirmwareVersion,CURRENT,");
-            }
-        }
-        else
-        {
-            // Failed to get version number
-            log_d("Sending error to AP config page");
-            snprintf(newVersionCSV, sizeof(newVersionCSV), "newFirmwareVersion,ERROR,");
-        }
-
-        websocket->textAll(newVersionCSV);
-    }
-    else if (strcmp(settingName, "getNewFirmware") == 0)
-    {
-        log_d("Getting new OTA Pull firmware");
-
-        websocket->textAll("gettingNewFirmware,1,"); // Tell the config page we received their request
-
-        apConfigFirmwareUpdateInProcess = true;
-        otaUpdate();
-
-        // We get here if WiFi failed to connect
-        websocket->textAll("gettingNewFirmware,ERROR,");
-    }
 
     // Check for bulk settings (constellations and message rates)
     // Must be last on else list
@@ -1349,24 +749,7 @@ void updateSettingWithValue(const char *settingName, const char *settingValueStr
             }
         }
 
-        // Scan for Base RTCM message settings
-        if (knownSetting == false)
-        {
-            int firstRTCMRecord = getMessageNumberByName("UBX_RTCM_1005");
 
-            char tempString[50];
-            for (int x = 0; x < MAX_UBX_MSG_RTCM; x++)
-            {
-                snprintf(tempString, sizeof(tempString), "%sBase",
-                         ubxMessages[firstRTCMRecord + x].msgTextName); // UBX_RTCM_1074Base
-                if (strcmp(settingName, tempString) == 0)
-                {
-                    settings.ubxMessageRatesBase[x] = settingValue;
-                    knownSetting = true;
-                    break;
-                }
-            }
-        }
         // Last catch
         if (knownSetting == false)
         {
@@ -1511,23 +894,6 @@ void createMessageList(String &returnText)
     log_d("returnText (%d bytes): %s\r\n", returnText.length(), returnText.c_str());
 }
 
-// When called, responds with the RTCM/Base messages supported on this platform
-// Message name and current rate are formatted in CSV, formatted to html by JS
-void createMessageListBase(String &returnText)
-{
-    returnText = "";
-
-    int firstRTCMRecord = getMessageNumberByName("UBX_RTCM_1005");
-
-    for (int messageNumber = 0; messageNumber < MAX_UBX_MSG_RTCM; messageNumber++)
-    {
-        if (messageSupported(firstRTCMRecord + messageNumber) == true)
-            returnText += String(ubxMessages[messageNumber + firstRTCMRecord].msgTextName) + "Base," +
-                          String(settings.ubxMessageRatesBase[messageNumber]) + ","; // UBX_RTCM_1074Base,4,
-    }
-
-    log_d("returnText (%d bytes): %s\r\n", returnText.length(), returnText.c_str());
-}
 
 // Make size of files human readable
 void stringHumanReadableSize(String &returnText, uint64_t bytes)
@@ -1566,4 +932,5 @@ void stringHumanReadableSize(String &returnText, uint64_t bytes)
     returnText = String(readableSize);
 }
 
+#endif //COMPILE_WEBSERVER
 

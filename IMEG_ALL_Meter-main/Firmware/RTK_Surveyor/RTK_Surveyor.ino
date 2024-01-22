@@ -28,6 +28,8 @@
 //#define COMPILE_ETHERNET // Comment out to remove REFERENCE_STATION Ethernet (W5500) support
 // #define REF_STN_GNSS_DEBUG //Uncomment this line to output GNSS library debug messages on serialGNSS. Ref Stn only.
 // Needs ENABLE_DEVELOPER
+#define COMPILE_WEBSERVER
+#define COMPILE_MENUS
 
 #if defined(COMPILE_WIFI) || defined(COMPILE_ETHERNET)
 #define COMPILE_NETWORK         true
@@ -71,7 +73,7 @@
 // Hardware connections
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // These pins are set in beginBoard()
-int pin_batteryLevelLED_Red = -1;
+//int pin_batteryLevelLED_Red = -1;
 int pin_batteryLevelLED_Green = -1;
 int pin_positionAccuracyLED_1cm = -1;
 int pin_positionAccuracyLED_10cm = -1;
@@ -117,17 +119,17 @@ int pin_SCK = 18;
 
 // LittleFS for storing settings for different user profiles
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-#include <LittleFS.h>
+//#include <LittleFS.h>
 
 #define MAX_PROFILE_COUNT 8
 uint8_t activeProfiles = 0;                // Bit vector indicating which profiles are active
 uint8_t displayProfile;                    // Range: 0 - (MAX_PROFILE_COUNT - 1)
 uint8_t profileNumber = MAX_PROFILE_COUNT; // profileNumber gets set once at boot to save loading time
 char profileNames[MAX_PROFILE_COUNT][50];  // Populated based on names found in LittleFS and SD
-char settingsFileName[60];                 // Contains the %s_Settings_%d.txt with current profile number set
+//char settingsFileName[60];                 // Contains the %s_Settings_%d.txt with current profile number set
 
-char stationCoordinateECEFFileName[60]; // Contains the /StationCoordinates-ECEF_%d.csv with current profile number set
-char stationCoordinateGeodeticFileName[60];     // Contains the /StationCoordinates-Geodetic_%d.csv with current profile
+//char stationCoordinateECEFFileName[60]; // Contains the /StationCoordinates-ECEF_%d.csv with current profile number set
+//char stationCoordinateGeodeticFileName[60];     // Contains the /StationCoordinates-Geodetic_%d.csv with current profile
                                                 // number set
 const int COMMON_COORDINATES_MAX_STATIONS = 50; // Record upto 50 ECEF and Geodetic commonly used stations
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -139,35 +141,7 @@ ESP32Time rtc;
 unsigned long syncRTCInterval = 1000; // To begin, sync RTC every second. Interval can be increased once sync'd.
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-// microSD Interface
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-#include <SPI.h>
 
-#include "SdFat.h" //http://librarymanager/All#sdfat_exfat by Bill Greiman. Currently uses v2.1.1
-SdFat *sd;
-
-
-
-char platformFilePrefix[40] = "SFE_Surveyor"; // Sets the prefix for logs and settings files
-
-
-unsigned long lastUBXLogSyncTime = 0; // Used to record to SD every half second
-int startLogTime_minutes = 0;         // Mark when we start any logging so we can stop logging after maxLogTime_minutes
-int startCurrentLogTime_minutes =
-    0; // Mark when we start this specific log file so we can close it after x minutes and start a new one
-
-// System crashes if two tasks access a file at the same time
-// So we use a semaphore to see if file system is available
-SemaphoreHandle_t sdCardSemaphore;
-TickType_t loggingSemaphoreWait_ms = 10 / portTICK_PERIOD_MS;
-const TickType_t fatSemaphore_shortWait_ms = 10 / portTICK_PERIOD_MS;
-const TickType_t fatSemaphore_longWait_ms = 200 / portTICK_PERIOD_MS;
-
-// Display used/free space in menu and config page
-uint64_t sdCardSize = 0;
-uint64_t sdFreeSpace = 0;
-bool outOfSDSpace = false;
-const uint32_t sdMinAvailableSpace = 10000000; // Minimum available bytes before SD is marked as out of space
 
 // Controls Logging Icon type
 typedef enum LoggingType
@@ -190,30 +164,16 @@ bool sdSizeCheckTaskComplete = false;
 char logFileName[sizeof("SFE_Reference_Station_230101_120101.ubx_plusExtraSpace")] = {0};
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-// Over-the-Air (OTA) update support
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#include "esp_ota_ops.h" //Needed for partition counting and updateFromSD
-
-#ifdef COMPILE_WIFI
-#include "ESP32OTAPull.h" //http://librarymanager/All#ESP-OTA-Pull Used for getting
-#endif  // COMPILE_WIFI
-
-#define OTA_FIRMWARE_JSON_URL                                                                                          \
-    "https://raw.githubusercontent.com/sparkfun/SparkFun_RTK_Firmware_Binaries/main/RTK-Firmware.json"
-#define OTA_RC_FIRMWARE_JSON_URL                                                                                       \
-    "https://raw.githubusercontent.com/sparkfun/SparkFun_RTK_Firmware_Binaries/main/RTK-RC-Firmware.json"
-bool apConfigFirmwareUpdateInProcess = false; // Goes true once WiFi is connected and OTA pull begins
-unsigned int binBytesSent = 0;         // Tracks firmware bytes sent over WiFi OTA update via AP config.
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Connection settings to NTRIP Caster
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 #ifdef COMPILE_WIFI
-#include <ArduinoJson.h>  //http://librarymanager/All#Arduino_JSON_messagepack v6.19.4
-#include <ESPmDNS.h>      //Built-in.
-#include <HTTPClient.h>   //Built-in. Needed for ThingStream API for ZTP
-#include <PubSubClient.h> //http://librarymanager/All#PubSubClient_MQTT_Lightweight by Nick O'Leary v2.8.0 Used for MQTT obtaining of keys
+//#include <ArduinoJson.h>  //http://librarymanager/All#Arduino_JSON_messagepack v6.19.4
+//#include <ESPmDNS.h>      //Built-in.
+//#include <HTTPClient.h>   //Built-in. Needed for ThingStream API for ZTP
+//#include <PubSubClient.h> //http://librarymanager/All#PubSubClient_MQTT_Lightweight by Nick O'Leary v2.8.0 Used for MQTT obtaining of keys
 #include <WiFi.h>             //Built-in.
 #include <WiFiClientSecure.h> //Built-in.
 #include <WiFiMulti.h>        //Built-in.
@@ -378,12 +338,6 @@ const byte haeNumberOfDecimals = 8; // Used for printing and transmitting lat/lo
 #include <SparkFun_MAX1704x_Fuel_Gauge_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_MAX1704x_Fuel_Gauge_Arduino_Library
 SFE_MAX1704X lipo(MAX1704X_MAX17048);
 
-// RTK Surveyor LED PWM properties
-const int pwmFreq = 5000;
-const int ledRedChannel = 0;
-const int ledGreenChannel = 1;
-const int ledBTChannel = 2;
-const int pwmResolution = 8;
 
 int pwmFadeAmount = 10;
 int btFadeLevel = 0;
@@ -441,7 +395,7 @@ const uint8_t btMaxEscapeCharacters = 3; // Number of characters needed to enter
 
 // External Display
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-#include <SparkFun_Qwiic_OLED.h> //http://librarymanager/All#SparkFun_Qwiic_Graphic_OLED
+//#include <SparkFun_Qwiic_OLED.h> //http://librarymanager/All#SparkFun_Qwiic_Graphic_OLED
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 // Firmware binaries loaded from SD
@@ -466,8 +420,8 @@ float btLEDTaskPace33Hz = 0.03;
 
 // Accelerometer for bubble leveling
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-#include "SparkFun_LIS2DH12.h" //Click here to get the library: http://librarymanager/All#SparkFun_LIS2DH12
-SPARKFUN_LIS2DH12 accel;
+//#include "SparkFun_LIS2DH12.h" //Click here to get the library: http://librarymanager/All#SparkFun_LIS2DH12
+//SPARKFUN_LIS2DH12 accel;
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 // Buttons - Interrupt driven and debounce
@@ -488,6 +442,7 @@ unsigned long lastRockerSwitchChange = 0; // If quick toggle is detected (less t
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 #ifdef COMPILE_WIFI
 #ifdef COMPILE_AP
+#ifdef COMPILE_WEBSERVER
 
 #include "ESPAsyncWebServer.h" //Get from: https://github.com/me-no-dev/ESPAsyncWebServer v1.2.3
 #include "form.h"
@@ -497,6 +452,7 @@ AsyncWebSocket *websocket = nullptr;
 
 char *settingsCSV = nullptr; // Push large array onto heap
 
+#endif  // COMPILE_WEBSERVER
 #endif  // COMPILE_AP
 #endif  // COMPILE_WIFI
 
@@ -509,14 +465,7 @@ unsigned long timeSinceLastIncomingSetting = 0;
 unsigned long lastDynamicDataUpdate = 0;
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-// PointPerfect Corrections
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-#if __has_include("tokens.h")
-#include "tokens.h"
-#endif  // __has_include("tokens.h")
 
-float lBandEBNO = 0.0; // Used on system status menu
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 // ESP NOW for multipoint wireless broadcasting over 2.4GHz
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -538,40 +487,12 @@ unsigned long lastEspnowRssiUpdate = 0;
 int espnowRSSI = 0;
 const uint8_t ESPNOW_MAX_PEERS = 5; // Maximum of 5 rovers
 
-// Ethernet
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-#ifdef COMPILE_ETHERNET
-#include <Ethernet.h> // http://librarymanager/All#Arduino_Ethernet
-IPAddress ethernetIPAddress;
-IPAddress ethernetDNS;
-IPAddress ethernetGateway;
-IPAddress ethernetSubnetMask;
-
-// Client for Ethernet TCP host
-EthernetClient *ethernetTcpClient = nullptr;
-
-class derivedEthernetUDP : public EthernetUDP
-{
-  public:
-    uint8_t getSockIndex()
-    {
-        return sockindex; // sockindex is protected in EthernetUDP. A derived class can access it.
-    }
-};
-derivedEthernetUDP *ethernetNTPServer = nullptr; // This will be instantiated when we know the NTP port
-volatile uint8_t ntpSockIndex; // The W5500 socket index for NTP - so we can enable and read the correct interrupt
-volatile struct timeval ethernetNtpTv; // This will hold the time the Ethernet NTP packet arrived
-uint32_t lastLoggedNTPRequest = 0;
-bool ntpLogIncreasing = false;
-
-#include "SparkFun_WebServer_ESP32_W5500.h" //http://librarymanager/All#SparkFun_WebServer_ESP32_W5500 v1.5.5
-#endif  // COMPILE_ETHERNET
 
 unsigned long lastEthernetCheck = 0; // Prevents cable checking from continually happening
 volatile bool ethernetTcpConnected = false;
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-#include "NetworkClient.h" //Supports both WiFiClient and EthernetClient
+//#include "NetworkClient.h" //Supports both WiFiClient and EthernetClient
 
 // Global variables
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -751,10 +672,7 @@ void initializeGlobals()
     gnssSyncTv.tv_usec = 0;
     previousGnssSyncTv.tv_sec = 0;
     previousGnssSyncTv.tv_usec = 0;
-#ifdef COMPILE_ETHERNET
-    ethernetNtpTv.tv_sec = 0;
-    ethernetNtpTv.tv_usec = 0;
-#endif  // COMPILE_ETHERNET
+
 }
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -768,8 +686,6 @@ void setup()
     identifyBoard(); // Determine what hardware platform we are running on
 
     beginI2C();
-
-    beginFS(); // Start LittleFS file system for settings
 
     beginGNSS(); // Connect to GNSS to get module type
 
@@ -820,13 +736,13 @@ void loop()
 
     reportHeap(); // If debug enabled, report free heap
 
-    updateSerial(); // Menu system via ESP32 USB connection
+    //updateSerial(); // Menu system via ESP32 USB connection
 
     wifiUpdate(); // Bring up WiFi when services need it
 
     updateRadio(); // Check if we need to finish sending any RTCM over link radio
 
-    ntripClientUpdate(); // Check the NTRIP client connection and move data NTRIP --> ZED
+    //ntripClientUpdate(); // Check the NTRIP client connection and move data NTRIP --> ZED
 
     tcpUpdate(); // Turn on TCP Client or Server as needed
 
@@ -960,6 +876,7 @@ void updateRadio()
 #endif  // COMPILE_ESPNOW
 }
 
+/*
 // Record who is holding the semaphore
 volatile SemaphoreFunction semaphoreFunction = FUNCTION_NOT_SET;
 
@@ -1054,3 +971,4 @@ void getSemaphoreFunction(char *functionName)
         break;
     }
 }
+*/
