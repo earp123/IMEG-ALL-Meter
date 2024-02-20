@@ -608,7 +608,7 @@ int lbandRestarts = 0;
 unsigned long lbandTimeToFix = 0;
 unsigned long lbandLastReport = 0;
 
-#include "Adafruit_VEML7700.h"
+#include "IMEG_VEML7700.h"
 Adafruit_VEML7700 veml = Adafruit_VEML7700();
 bool veml_online = true;
 uint16_t lux_read = 0;
@@ -712,7 +712,7 @@ void setup()
       Serial.println("Sensor not found");
       veml_online = false;
     }
-    Serial.println("Sensor found");
+    else Serial.println("Sensor found");
 
     Serial.flush(); // Complete any previous prints
 
@@ -730,9 +730,11 @@ void loop()
 
     updateSystemState();
 
-    updateBattery();
+    //temp disable for VEML testing
+    //updateBattery();
 
-    updateRTC(); // Set system time to GNSS once we have fix
+    //temp disable for VEML testing
+    //updateRTC(); // Set system time to GNSS once we have fix
 
     reportHeap(); // If debug enabled, report free heap
 

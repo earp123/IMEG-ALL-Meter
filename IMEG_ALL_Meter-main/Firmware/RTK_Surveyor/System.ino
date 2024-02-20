@@ -652,7 +652,7 @@ bool setConstellations(bool sendCompleteBatch)
 void printPosition()
 {
     // Periodically print the position
-    if (/*settings.enablePrintPosition && */((millis() - lastPrintPosition) > 15000))
+    if (/*settings.enablePrintPosition && */((millis() - lastPrintPosition) > 1000))
     {
       if (veml_online)
       {
@@ -666,7 +666,7 @@ void printPosition()
         Serial.flush();
       }
 
-      printCurrentConditions();
+      //printCurrentConditions(); ~SWR
       lastPrintPosition = millis();
     }
 }

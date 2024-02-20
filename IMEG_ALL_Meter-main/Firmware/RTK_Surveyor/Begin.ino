@@ -12,8 +12,6 @@ void identifyBoard()
 void beginBoard()
 {
 
-  pin_muxA = 2;
-  pin_muxB = 4;
   pin_powerSenseAndControl = 13;
   pin_setupButton = 14;
   pin_microSD_CS = 25;
