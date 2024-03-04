@@ -609,7 +609,7 @@ unsigned long lbandTimeToFix = 0;
 unsigned long lbandLastReport = 0;
 
 #include "IMEG_VEML7700.h"
-Adafruit_VEML7700 veml = Adafruit_VEML7700();
+IMEG_VEML7700 veml = IMEG_VEML7700();
 bool veml_online = true;
 uint16_t lux_read = 0;
 #define LUX_READING_SAMPLE_SIZE 10 //increasing will block for longer
