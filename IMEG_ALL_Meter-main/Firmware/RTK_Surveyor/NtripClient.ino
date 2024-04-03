@@ -1,7 +1,7 @@
 
 void ntripClientStart()
 {
-    systemPrintln("NTRIP Client not available: Ethernet and WiFi not compiled");
+    systemPrintln("NTRIP Client not available.");
 }
 void ntripClientStop(bool clientAllocated) {online.ntripClient = false;}
 void ntripClientUpdate() {}
