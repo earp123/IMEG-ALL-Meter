@@ -598,18 +598,27 @@ void pinI2CTask(void *pvParameters)
     vTaskDelete(nullptr); // Delete task once it has run once
 }
 
-// Depending on radio selection, begin hardware
+//~SWR added espnowaddpeer for the ALL meter remote.
+//     peer1 is the MAC address defined as a global
 void radioStart()
 {
-    if (settings.radioType == RADIO_EXTERNAL)
-    {
-        espnowStop();
+    espnowStart();
 
-        // Nothing to start. UART2 of ZED is connected to external Radio port and is configured at
-        // configureUbloxModule()
+    if (esp_now_is_peer_exist(peer1) == true)
+                log_d("Peer already exists");
+    else
+    {
+        // Add new peer to system
+        espnowAddPeer(peer1, false);
+
+        // Record this MAC to peer list
+        memcpy(settings.espnowPeers[settings.espnowPeerCount], peer1, 6);
+        settings.espnowPeerCount++;
+        settings.espnowPeerCount %= ESPNOW_MAX_PEERS;
+        recordSystemSettings();
     }
-    else if (settings.radioType == RADIO_ESPNOW)
-        espnowStart();
+
+    espnowSetState(ESPNOW_PAIRED);
 }
 
 

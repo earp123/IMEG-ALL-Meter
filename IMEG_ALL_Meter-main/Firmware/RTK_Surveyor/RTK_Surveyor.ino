@@ -486,6 +486,7 @@ unsigned long lastEspnowRssiUpdate = 0;
 
 int espnowRSSI = 0;
 const uint8_t ESPNOW_MAX_PEERS = 5; // Maximum of 5 rovers
+uint8_t peer1[] = {0x78, 0x21, 0x84, 0x95, 0x79, 0x69}; //ALL remote MAC
 
 
 unsigned long lastEthernetCheck = 0; // Prevents cable checking from continually happening
@@ -675,6 +676,7 @@ void initializeGlobals()
 
 }
 
+
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 void setup()
@@ -706,7 +708,6 @@ void setup()
     beginSystemState(); // Determine initial system state. Start task for button monitoring.
 
     updateRTC(); // The GNSS likely has time/date. Update ESP32 RTC to match. Needed for PointPerfect key expiration.
-
     
     if (!veml.begin()) {
       Serial.println("Sensor not found");
@@ -738,7 +739,7 @@ void loop()
 
     reportHeap(); // If debug enabled, report free heap
 
-    //updateSerial(); // Menu system via ESP32 USB connection
+    updateSerial(); // Menu system via ESP32 USB connection
 
     wifiUpdate(); // Bring up WiFi when services need it
 
@@ -746,7 +747,7 @@ void loop()
 
     //ntripClientUpdate(); // Check the NTRIP client connection and move data NTRIP --> ZED
 
-    tcpUpdate(); // Turn on TCP Client or Server as needed
+    //tcpUpdate(); // Turn on TCP Client or Server as needed
 
     printPosition(); // Periodically print GNSS coordinates if enabled
 

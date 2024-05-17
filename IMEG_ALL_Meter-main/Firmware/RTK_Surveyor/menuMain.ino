@@ -1,5 +1,6 @@
 // Check to see if we've received serial over USB
 // Report status if ~ received, otherwise present config menu
+#include "remote_packet.h"
 #ifdef COMPILE_MENUS
 void updateSerial()
 {
@@ -174,7 +175,6 @@ void menuRadio()
         systemPrintln("3) Forget all radios");
         if (ENABLE_DEVELOPER)
         {
-            systemPrintln("4) Add dummy radio");
             systemPrintln("5) Send dummy data");
             systemPrintln("6) Broadcast dummy data");
         }
@@ -203,32 +203,31 @@ void menuRadio()
                 systemPrintln("Radios forgotten");
             }
         }
+        /* SWR don't really need to be adding other radios right now
         else if (ENABLE_DEVELOPER && settings.radioType == RADIO_ESPNOW && incoming == 4)
         {
-            uint8_t peer1[] = {0xB8, 0xD6, 0x1A, 0x0D, 0x8F, 0x9C}; // Random MAC
-            if (esp_now_is_peer_exist(peer1) == true)
+            uint8_t peerDummy[] = {0xE3, 0x21, 0x45, 0x95, 0xF5, 0x69}; 
+            if (esp_now_is_peer_exist(peerDummy) == true)
                 log_d("Peer already exists");
             else
             {
                 // Add new peer to system
-                espnowAddPeer(peer1);
+                espnowAddPeer(peerDummy);
 
                 // Record this MAC to peer list
-                memcpy(settings.espnowPeers[settings.espnowPeerCount], peer1, 6);
+                memcpy(settings.espnowPeers[settings.espnowPeerCount], peerDummy, 6);
                 settings.espnowPeerCount++;
                 settings.espnowPeerCount %= ESPNOW_MAX_PEERS;
                 recordSystemSettings();
             }
 
             espnowSetState(ESPNOW_PAIRED);
-        }
+        }*/
         else if (ENABLE_DEVELOPER && settings.radioType == RADIO_ESPNOW && incoming == 5)
         {
-            uint8_t espnowData[] =
-                "This is the long string to test how quickly we can send one string to the other unit. I am going to "
-                "need a much longer sentence if I want to get a long amount of data into one transmission. This is "
-                "nearing 200 characters but needs to be near 250.";
-            esp_now_send(0, (uint8_t *)&espnowData, sizeof(espnowData)); // Send packet to all peers
+            struct remote_packet rp;
+            //uint8_t info[] = *rp;
+            esp_now_send(0, (uint8_t *)&rp, sizeof(rp)); // Send packet to all peers
         }
         else if (ENABLE_DEVELOPER && settings.radioType == RADIO_ESPNOW && incoming == 6)
         {
