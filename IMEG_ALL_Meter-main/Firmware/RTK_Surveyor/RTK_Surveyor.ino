@@ -730,10 +730,8 @@ void loop()
     }
 
     updateSystemState();
-
     
     updateBattery();
-
     
     updateRTC(); // Set system time to GNSS once we have fix
 
