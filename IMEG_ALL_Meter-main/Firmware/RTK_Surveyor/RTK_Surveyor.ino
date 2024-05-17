@@ -469,9 +469,10 @@ unsigned long lastDynamicDataUpdate = 0;
 
 // ESP NOW for multipoint wireless broadcasting over 2.4GHz
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-#ifdef COMPILE_ESPNOW
+
 
 #include <esp_now.h>
+#include "remote_packet.h"
 
 uint8_t espnowOutgoing[250];    // ESP NOW has max of 250 characters
 unsigned long espnowLastAdd;    // Tracks how long since last byte was added to the outgoing buffer
@@ -482,11 +483,12 @@ uint8_t receivedMAC[6];         // Holds the broadcast MAC during pairing
 int packetRSSI = 0;
 unsigned long lastEspnowRssiUpdate = 0;
 
-#endif  // COMPILE_ESPNOW
 
 int espnowRSSI = 0;
 const uint8_t ESPNOW_MAX_PEERS = 5; // Maximum of 5 rovers
+
 uint8_t peer1[] = {0x78, 0x21, 0x84, 0x95, 0x79, 0x69}; //ALL remote MAC
+struct remote_packet outgoing_p;
 
 
 unsigned long lastEthernetCheck = 0; // Prevents cable checking from continually happening

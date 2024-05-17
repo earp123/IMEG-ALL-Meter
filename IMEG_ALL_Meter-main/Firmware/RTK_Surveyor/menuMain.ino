@@ -1,6 +1,5 @@
 // Check to see if we've received serial over USB
 // Report status if ~ received, otherwise present config menu
-#include "remote_packet.h"
 #ifdef COMPILE_MENUS
 void updateSerial()
 {
@@ -225,9 +224,7 @@ void menuRadio()
         }*/
         else if (ENABLE_DEVELOPER && settings.radioType == RADIO_ESPNOW && incoming == 5)
         {
-            struct remote_packet rp;
-            //uint8_t info[] = *rp;
-            esp_now_send(0, (uint8_t *)&rp, sizeof(rp)); // Send packet to all peers
+            esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers
         }
         else if (ENABLE_DEVELOPER && settings.radioType == RADIO_ESPNOW && incoming == 6)
         {

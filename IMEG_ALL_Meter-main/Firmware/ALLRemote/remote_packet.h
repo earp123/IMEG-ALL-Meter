@@ -1,4 +1,4 @@
 struct remote_packet {
-  int lux = 45;
+  uint16_t lux = 45;
   int lat = 90;
 };

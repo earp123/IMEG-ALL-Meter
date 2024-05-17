@@ -660,9 +660,14 @@ void printPosition()
         lux_read = veml.readLux_sd(LUX_READING_SAMPLE_SIZE, STANDARD_DEVIATION_THRESHOLD);
         if(lux_read < 65535){
           Serial.print("Lux Reading: "); Serial.println(lux_read);
+          outgoing_p.lux = lux_read;
         } 
-        else 
+        else
+        {
           Serial.println("Lux Reading: Unstable");
+          outgoing_p.lux = -1;
+        } 
+        esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers  
         Serial.flush();
       }
 
