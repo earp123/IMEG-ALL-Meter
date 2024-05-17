@@ -1,8 +1,11 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#include "M5Unified.h"
+#include <M5Unified.h>
+
 #include "remote_packet.h"
+
+//TODO get SD card working
 
 #define CHANNEL 1
 
@@ -35,7 +38,15 @@ void configDeviceAP() {
 }
 
 void setup() {
-  M5.Lcd.begin();
+
+  M5.begin();
+
+  if (!M5.SD.begin()) {  // Initialize the SD card. 
+      M5.Lcd.println("Card failed, or not present");
+      while (1);
+  }
+
+  
   
   //Set device in AP mode to begin with
   WiFi.mode(WIFI_AP);
