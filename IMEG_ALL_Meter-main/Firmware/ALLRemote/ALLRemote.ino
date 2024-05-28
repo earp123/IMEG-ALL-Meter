@@ -3,13 +3,12 @@
 #include <SD.h>
 
 #include <M5Unified.h>
-
 #include "remote_packet.h"
-
-//TODO get SD card working
 
 #define CHANNEL 1
 
+bool connected = false;
+int lastPacket_s = 6;
 struct remote_packet incoming_p;
 File myFile;
 
@@ -49,7 +48,6 @@ void setup() {
     while (1)
         ;
   }
-  M5.Lcd.println("TF card initialized.");
   myFile = SD.open("/hello.txt", FILE_WRITE, true);  // Create a new file "/hello.txt".
   myFile.close();
 
@@ -60,8 +58,8 @@ void setup() {
   // configure device AP mode
   configDeviceAP();
   // This is the mac address of the Slave in AP Mode
-  M5.Lcd.setCursor(0, 10);
-  M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
+  //M5.Lcd.setCursor(0, 10);
+  //M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
   // Init ESPNow with a fallback logic
   InitESPNow();
 
@@ -77,42 +75,19 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
   //M5.Lcd.print("Last Packet Recv from: "); M5.Lcd.println(macStr);
-  
   memcpy(&incoming_p, data, data_len);
+  
+  lastPacket_s = 0;
   
 }
 
 void loop() {
 
   M5.update();
-  M5.Lcd.setCursor(0, 20);
-  M5.Lcd.setTextColor(WHITE, BLACK);
-  M5.Lcd.setTextSize(4);  
-  M5.Lcd.println("          ");
-  M5.Lcd.setCursor(0, 20);
-
-  if(incoming_p.lux < 65535){
-    M5.Lcd.println(incoming_p.lux);
-  } 
-  else M5.Lcd.println("Unstable");
-
-  M5.Lcd.setCursor(0,60);
-  M5.Lcd.setTextSize(1);
-  if (M5.BtnA.isPressed()) {
-    
-    myFile = SD.open("/hello.txt", FILE_WRITE);
-    if (myFile){
-      myFile.println("Testing multiple lines with \n carriage return.");
-      myFile.println(incoming_p.lux, DEC);
-      incoming_p.lux++;
-      myFile.println(incoming_p.lux, DEC);
-      myFile.close();
-      
-      M5.Lcd.println("Value written to SD");
-    }
-  }else{
-    M5.Lcd.println("                    ");
-  }
+  updateMainDisplay();
 
   delay(1000);
+  lastPacket_s++;
+  if (lastPacket_s > 5) connected = false;
+  else                  connected = true;
 }

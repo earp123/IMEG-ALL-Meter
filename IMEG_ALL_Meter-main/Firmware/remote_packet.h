@@ -11,12 +11,10 @@ struct remote_packet {
   int hour = 12;
   int minute = 34;
   
-  int rxBatt = 97;
+  int rxBatt = 9;
   
   //need to clear after we capture it
   bool luxCapture = false;
-  
-  
-  bool connected = true;
+ 
   
 };

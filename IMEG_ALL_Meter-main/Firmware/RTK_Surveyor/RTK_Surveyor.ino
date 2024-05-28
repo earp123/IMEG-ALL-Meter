@@ -845,6 +845,7 @@ void updateRadio()
   outgoing_p.latit  = latitude;
   outgoing_p.longit = longitude;
   outgoing_p.satsInView = numSV;
+  outgoing_p.horizAcc = horizontalAccuracy;
 
   outgoing_p.hour = gnssHour;
   outgoing_p.minute = gnssMinute;

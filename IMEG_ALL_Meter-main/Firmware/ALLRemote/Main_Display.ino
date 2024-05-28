@@ -10,23 +10,27 @@ void init_label(int x_pos, int y_pos, int fg_color, int bg_color, float text_siz
 void updateMainDisplay()
 {
   //receiver Battery
-  init_label(10, 10, BLACK, GREEN, 3, "  ");
-  init_label(12, 12, BLACK, GREEN, 2.5, "Rx");
+  if (connected) init_label(10, 0, BLACK, GREEN, 3, "  ");
+  init_label(12, 2, (connected ? BLACK: WHITE), (connected ? GREEN: BLACK), 2.5, "Rx");
   String rx_batt = "";
   rx_batt.concat(incoming_p.rxBatt);
-  rx_batt.concat("%");
-  init_label(60, 10, GREEN, BLACK, 3, rx_batt);
+  rx_batt.concat("% ");
+
+  init_label(60, 2, GREEN, BLACK, 2.5, rx_batt);
 
   //Time
-  String display_time;
+  String display_time = "";
+  if (incoming_p.hour < 10) display_time.concat(" ");
   display_time += incoming_p.hour;
   display_time += ":";
+  if (incoming_p.minute < 10) display_time.concat("0");
   display_time += incoming_p.minute; 
   init_label(225, 0, RED, BLACK, 3, display_time);
 
   //SIV
   String display_siv = "SIV:";
   display_siv += incoming_p.satsInView;
+  display_siv += " ";//covers up the last digit if we go <10
   init_label(10, 50, WHITE, BLACK, 3, display_siv);
 
   //Horizontal Accuracy
@@ -57,7 +61,7 @@ void updateMainDisplay()
 
   //Button Labels
   init_label(35, 220, BLACK, BLUE, 2.5, "READ");
-  init_label(130, 220, BLACK, BLUE, 2.5, " LOG");
+  init_label(140, 220, BLACK, BLUE, 2.5, "LOG");
   init_label(225, 220, BLACK, BLUE, 2.5, "MENU");
 
    
