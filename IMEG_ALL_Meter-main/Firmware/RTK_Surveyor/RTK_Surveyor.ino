@@ -615,6 +615,8 @@ unsigned long lbandLastReport = 0;
 IMEG_VEML7700 veml = IMEG_VEML7700();
 bool veml_online = true;
 uint16_t lux_read = 0;
+
+//TODO make these parameters user adjustable eventually \/
 #define LUX_READING_SAMPLE_SIZE 10 //increasing will block for longer
 #define STANDARD_DEVIATION_THRESHOLD 1.0 //decreasing will block for longer
 
@@ -834,49 +836,21 @@ void updateRTC()
 }
 
 // Called from main loop
-// Control incoming/outgoing RTCM data from:
-// External radio - this is normally a serial telemetry radio hung off the RADIO port
-// Internal ESP NOW radio - Use the ESP32 to directly transmit/receive RTCM over 2.4GHz (no WiFi needed)
+//~SWR deleted the RTCM function code since we're not using that.
+//     Instead, we'll use this function to update the radio packet sent to the ALL Remote, and then send it. 
 void updateRadio()
 {
-    // If we have not gotten new RTCM bytes for a period of time, assume end of frame
-    if (millis() - rtcmLastReceived > 50 && rtcmBytesSent > 0)
-    {
-        rtcmBytesSent = 0;
-        rtcmPacketsSent++; // If not checking RTCM CRC, count based on timeout
-    }
 
-#ifdef COMPILE_ESPNOW
-    if (settings.radioType == RADIO_ESPNOW)
-    {
-        if (espnowState == ESPNOW_PAIRED)
-        {
-            // If it's been longer than a few ms since we last added a byte to the buffer
-            // then we've reached the end of the RTCM stream. Send partial buffer.
-            if (espnowOutgoingSpot > 0 && (millis() - espnowLastAdd) > 50)
-            {
-                if (settings.espnowBroadcast == false)
-                    esp_now_send(0, (uint8_t *)&espnowOutgoing, espnowOutgoingSpot); // Send partial packet to all peers
-                else
-                {
-                    uint8_t broadcastMac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-                    esp_now_send(broadcastMac, (uint8_t *)&espnowOutgoing,
-                                 espnowOutgoingSpot); // Send packet via broadcast
-                }
+  outgoing_p.rxBatt = battLevel;
+  outgoing_p.latit  = latitude;
+  outgoing_p.longit = longitude;
+  outgoing_p.satsInView = numSV;
 
-                if (!inMainMenu)
-                    log_d("ESPNOW transmitted %d RTCM bytes", espnowBytesSent + espnowOutgoingSpot);
-                espnowBytesSent = 0;
-                espnowOutgoingSpot = 0; // Reset
-            }
+  outgoing_p.hour = gnssHour;
+  outgoing_p.minute = gnssMinute;
 
-            // If we don't receive an ESP NOW packet after some time, set RSSI to very negative
-            // This removes the ESPNOW icon from the display when the link goes down
-            if (millis() - lastEspnowRssiUpdate > 5000 && espnowRSSI > -255)
-                espnowRSSI = -255;
-        }
-    }
-#endif  // COMPILE_ESPNOW
+  esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers
+
 }
 
 /*

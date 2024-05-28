@@ -652,11 +652,12 @@ bool setConstellations(bool sendCompleteBatch)
 void printPosition()
 {
     // Periodically print the position
-    if (/*settings.enablePrintPosition && */((millis() - lastPrintPosition) > 1000))
+    if (/*settings.enablePrintPosition && */((millis() - lastPrintPosition) > 10000))
     {
+      /*
       if (veml_online)
       {
-                                        //TODO make these parameters user adjustable eventually \/
+                                        
         lux_read = veml.readLux_sd(LUX_READING_SAMPLE_SIZE, STANDARD_DEVIATION_THRESHOLD);
         if(lux_read < 65535){
           Serial.print("Lux Reading: "); Serial.println(lux_read);
@@ -670,8 +671,9 @@ void printPosition()
         esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers  
         Serial.flush();
       }
+      */
 
-      //printCurrentConditions(); ~SWR
+      printCurrentConditions();
       lastPrintPosition = millis();
     }
 }

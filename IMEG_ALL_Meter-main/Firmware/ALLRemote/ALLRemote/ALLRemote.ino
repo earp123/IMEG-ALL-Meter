@@ -1,5 +1,6 @@
 #include <esp_now.h>
 #include <WiFi.h>
+#include <SD.h>
 
 #include <M5Unified.h>
 
@@ -40,14 +41,20 @@ void configDeviceAP() {
 void setup() {
 
   M5.begin();
-
-  if (!M5.SD.begin()) {  // Initialize the SD card. 
-      M5.Lcd.println("Card failed, or not present");
-      while (1);
+  Serial.begin(115200);
+  if (!SD.begin(4, SPI, 4000000)) {  // Initialize the SD card. 初始化SD卡
+    M5.Lcd.println(
+        "Card failed, or not present");  // Print a message if the SD card
+                                          // initialization fails or if the
+                                          // SD card does not exist
+                                          // 如果SD卡初始化失败或者SD卡不存在，则打印消息
+    while (1)
+        ;
   }
+  M5.Lcd.println("TF card initialized.");
 
   
-  
+    
   //Set device in AP mode to begin with
   WiFi.mode(WIFI_AP);
   // configure device AP mode
@@ -82,8 +89,10 @@ void loop() {
   M5.Lcd.println("          ");
   M5.Lcd.setCursor(0, 10);
 
-  if(incoming_p.lux < 65535) M5.Lcd.println(incoming_p.lux);
-  else                       M5.Lcd.println("Unstable");
+  if(incoming_p.lux < 65535){
+    M5.Lcd.println(incoming_p.lux);
+  } 
+  else M5.Lcd.println("Unstable");
 
   delay(2000);
 }
