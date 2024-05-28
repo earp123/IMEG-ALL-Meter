@@ -626,9 +626,9 @@ uint16_t lux_read = 0;
                      |                 ESP32                 |      |   GNSS   |  Antenna
   +-------------+    |                                       |      |          |     |
   | Phone       |    |   .-----------.          .--------.   |27  42|          |     |
-  |        RTCM |--->|-->|           |--------->|        |-->|----->|TXD, MISO |     |
+  |             |--->|-->|           |--------->|        |-->|----->|TXD, MISO |     |
   |             |    |   | Bluetooth |          | UART 2 |   |      | UART1    |     |
-  | NMEA + RTCM |<---|<--|           |<-------+-|        |<--|<-----|RXD, MOSI |<----'
+  | NMEA        |<---|<--|           |<-------+-|        |<--|<-----|RXD, MOSI |<----'
   +-------------+    |   '-----------'        | '--------'   |28  43|          |
                      |                        |              |      |          |
                      |                        |              |      |          |
@@ -652,19 +652,19 @@ uint16_t lux_read = 0;
                      |   .------.                            |      |          |      Data)
         Browser <--->|<->|      |<---> WiFi Config           |      |          |
                      |   |      |                            |      |          |
-  +--------------+   |   |      |                            |      |      USB |<--> USB UART
-  |              |<--|<--| WiFi |<---- NMEA + RTCM <-.       |      |          |  (Config UBLOX)
-  | NTRIP Caster |   |   |      |                    |       |      |          |
-  |              |-->|-->|      |-----------.        |       |6   46|          |
-  +--------------+   |   |      |           |        |  .----|<-----|TXREADY   |
+                     |   |      |                            |      |      USB |<--> USB UART
+                     |<--| WiFi |<---- NMEA + RTCM <-.       |      |          |  (Config UBLOX)
+                     |   |      |                    |       |      |          |
+                     |-->|      |-----------.        |       |6   46|          |
+                     |   |      |           |        |  .----|<-----|TXREADY   |
                      |   '------'           |        |  v    |      |          |
                      |                      |      .-----.   |      |          |
                      |                      '----->|     |   |33  44|          |
                      |                             |     |<->|<---->|SDA, CS_N |
-                     |           Commands -------->| I2C |   |      |    I2C   |
-                     |                             |     |-->|----->|SCL, CLK  |
-                     |             Status <--------|     |   |36  45|          |
-                     |                             '-----'   |      +----------+
+  +--------------+   |                             | I2C |   |      |    I2C   |
+  |   VEML7700   |<->|<-->Commands/Sensor -------->|     |-->|----->|SCL, CLK  |
+  |              |   |                             |     |   |36  45|          | 
+  +--------------+   |                             '-----'   |      +----------+
                      |                                       |
                      +---------------------------------------+
 */
@@ -745,7 +745,7 @@ void loop()
 
     wifiUpdate(); // Bring up WiFi when services need it
 
-    updateRadio(); // Check if we need to finish sending any RTCM over link radio
+    updateRadio(); // Update and send packets to ALL Remote
 
     //ntripClientUpdate(); // Check the NTRIP client connection and move data NTRIP --> ZED
 
