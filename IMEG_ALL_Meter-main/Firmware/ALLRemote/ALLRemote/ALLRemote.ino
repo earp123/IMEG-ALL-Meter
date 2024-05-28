@@ -11,6 +11,7 @@
 #define CHANNEL 1
 
 struct remote_packet incoming_p;
+File myFile;
 
 // Init ESP Now with fallback
 void InitESPNow() {
@@ -44,14 +45,13 @@ void setup() {
   Serial.begin(115200);
   if (!SD.begin(4, SPI, 4000000)) {  // Initialize the SD card. 初始化SD卡
     M5.Lcd.println(
-        "Card failed, or not present");  // Print a message if the SD card
-                                          // initialization fails or if the
-                                          // SD card does not exist
-                                          // 如果SD卡初始化失败或者SD卡不存在，则打印消息
+        "Card failed, or not present");
     while (1)
         ;
   }
   M5.Lcd.println("TF card initialized.");
+  myFile = SD.open("/hello.txt", FILE_WRITE, true);  // Create a new file "/hello.txt".
+  myFile.close();
 
   
     
@@ -60,11 +60,11 @@ void setup() {
   // configure device AP mode
   configDeviceAP();
   // This is the mac address of the Slave in AP Mode
+  M5.Lcd.setCursor(0, 10);
   M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
   // Init ESPNow with a fallback logic
   InitESPNow();
-  
-  M5.Lcd.setTextSize(4);  
+
   // Once ESPNow is successfully Init, we will register for recv CB to
   // get recv packer info.
   esp_now_register_recv_cb(OnDataRecv);
@@ -84,15 +84,35 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 
 void loop() {
 
-  M5.Lcd.setCursor(0, 10);
+  M5.update();
+  M5.Lcd.setCursor(0, 20);
   M5.Lcd.setTextColor(WHITE, BLACK);
+  M5.Lcd.setTextSize(4);  
   M5.Lcd.println("          ");
-  M5.Lcd.setCursor(0, 10);
+  M5.Lcd.setCursor(0, 20);
 
   if(incoming_p.lux < 65535){
     M5.Lcd.println(incoming_p.lux);
   } 
   else M5.Lcd.println("Unstable");
 
-  delay(2000);
+  M5.Lcd.setCursor(0,60);
+  M5.Lcd.setTextSize(1);
+  if (M5.BtnA.isPressed()) {
+    
+    myFile = SD.open("/hello.txt", FILE_WRITE);
+    if (myFile){
+      myFile.println("Testing multiple lines with \n carriage return.");
+      myFile.println(incoming_p.lux, DEC);
+      incoming_p.lux++;
+      myFile.println(incoming_p.lux, DEC);
+      myFile.close();
+      
+      M5.Lcd.println("Value written to SD");
+    }
+  }else{
+    M5.Lcd.println("                    ");
+  }
+
+  delay(1000);
 }
