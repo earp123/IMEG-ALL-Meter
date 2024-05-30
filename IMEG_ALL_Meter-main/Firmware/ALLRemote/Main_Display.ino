@@ -7,7 +7,7 @@ void init_label(int x_pos, int y_pos, int fg_color, int bg_color, float text_siz
 
 }
 
-void updateMainDisplay()
+static void updateMainDisplay()
 {
   //receiver Battery
   if (connected) init_label(10, 0, BLACK, GREEN, 3, "  ");
@@ -65,4 +65,36 @@ void updateMainDisplay()
   init_label(225, 220, BLACK, BLUE, 2.5, "MENU");
 
    
+}
+
+void mainDisplay()
+{
+  while(1)
+  {
+    switch(butn){
+      case ABUTN:
+        //MEASURE
+        butn = NONE;
+        break;
+
+      case BBUTN:
+        //LOG
+        butn = NONE;
+        break;
+
+      case CBUTN:
+        butn = NONE;
+        M5.Lcd.clear();
+        mainMenu();
+        break;
+      case NONE:
+        //fall through
+      default: updateMainDisplay();
+    }
+
+    delay(300);
+    lastPacket_s++;
+    if (lastPacket_s > 5) connected = false;
+    else                  connected = true;
+  }
 }

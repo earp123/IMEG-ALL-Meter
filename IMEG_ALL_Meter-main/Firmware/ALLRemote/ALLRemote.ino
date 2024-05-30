@@ -12,6 +12,28 @@ int lastPacket_s = 6;
 struct remote_packet incoming_p;
 File myFile;
 
+enum buttonPress {
+  ABUTN, BBUTN, CBUTN, NONE
+};
+
+enum menus {
+  MN_DISPLAY, MN_MENU, FS_MENU
+};
+
+buttonPress butn = NONE;
+
+void IRAM_ATTR Apress() {
+    butn = ABUTN;
+}
+
+void IRAM_ATTR Bpress() {
+    butn = BBUTN;
+}
+
+void IRAM_ATTR Cpress() {
+    butn = CBUTN;
+}
+
 // Init ESP Now with fallback
 void InitESPNow() {
   WiFi.disconnect();
@@ -27,7 +49,7 @@ void InitESPNow() {
   }
 }
 
-// config AP SSID
+// SWR don't think I need this
 void configDeviceAP() {
   const char *SSID = "ALLRemote";
   bool result = WiFi.softAP(SSID, "imegallremote", CHANNEL, 0);
@@ -42,23 +64,22 @@ void setup() {
 
   M5.begin();
   Serial.begin(115200);
-  if (!SD.begin(4, SPI, 4000000)) {  // Initialize the SD card. 初始化SD卡
+  if (!SD.begin(4, SPI, 4000000)) {  
     M5.Lcd.println(
         "Card failed, or not present");
     while (1)
         ;
   }
-  myFile = SD.open("/hello.txt", FILE_WRITE, true);  // Create a new file "/hello.txt".
-  myFile.close();
 
+  attachInterrupt(39, Apress, FALLING);
+  attachInterrupt(38, Bpress, FALLING);
+  attachInterrupt(37, Cpress, FALLING);
   
     
   //Set device in AP mode to begin with
   WiFi.mode(WIFI_AP);
   // configure device AP mode
   configDeviceAP();
-  // This is the mac address of the Slave in AP Mode
-  //M5.Lcd.setCursor(0, 10);
   //M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
   // Init ESPNow with a fallback logic
   InitESPNow();
@@ -66,6 +87,8 @@ void setup() {
   // Once ESPNow is successfully Init, we will register for recv CB to
   // get recv packer info.
   esp_now_register_recv_cb(OnDataRecv);
+
+  mainDisplay();
 
 }
 
@@ -83,11 +106,5 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 
 void loop() {
 
-  M5.update();
-  updateMainDisplay();
-
-  delay(1000);
-  lastPacket_s++;
-  if (lastPacket_s > 5) connected = false;
-  else                  connected = true;
+  
 }
