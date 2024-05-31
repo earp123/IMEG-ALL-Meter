@@ -26,6 +26,50 @@ static void updateMenu(int index)
 
 }
 
+void updateTimeZoneSelect()
+{
+  M5.Lcd.setCursor(0,0);
+  M5.Lcd.setTextSize(3);
+  M5.Lcd.setTextColor(WHITE, BLACK);
+
+  M5.Lcd.print("GMT     ");if(GMToffset >= 0) M5.Lcd.print("+"); M5.Lcd.println(GMToffset);
+}
+
+void timeZoneSelect()
+{
+  M5.Lcd.setCursor(0,0);
+  M5.Lcd.setTextSize(3);
+  M5.Lcd.setTextColor(WHITE, BLACK);
+
+  M5.Lcd.print("GMT     ");M5.Lcd.println(GMToffset);
+
+  while(1)
+  {
+    switch(butn){
+      case ABUTN:
+        butn = NONE;
+        GMToffset--;
+        updateTimeZoneSelect();
+        break;
+
+      case BBUTN:
+        butn = NONE;
+        GMToffset++;
+        updateTimeZoneSelect();
+        break;
+
+      case CBUTN:
+        butn = NONE;
+        mainMenu();
+        break;
+      case NONE:
+        //fall through
+      default: break;
+    }
+    delay(300);
+  }
+}
+
 void mainMenu()
 {
   int menu_idx = 1;
@@ -51,10 +95,27 @@ void mainMenu()
 
       case CBUTN:
         butn = NONE;
-        if (menu_idx == 5){
+        if (menu_idx == 5){//BACK
           M5.Lcd.clear();
           mainDisplay();
-        } 
+        }
+        else if (menu_idx == 4){//RX MENU
+          //M5.Lcd.clear();
+          
+        }
+        else if (menu_idx == 3){//VEML7700 
+          //M5.Lcd.clear();
+          
+        }
+        else if (menu_idx == 2){//FS MENU
+          //M5.Lcd.clear();
+          
+        }
+        else if (menu_idx == 1){//TIME ZONE MENU
+          M5.Lcd.clear();
+          timeZoneSelect();
+        }
+
         break;
       case NONE:
         //fall through

@@ -21,7 +21,7 @@ static void updateMainDisplay()
   //Time
   String display_time = "";
   if (incoming_p.hour < 10) display_time.concat(" ");
-  display_time += incoming_p.hour;
+  display_time += (incoming_p.hour+GMToffset);
   display_time += ":";
   if (incoming_p.minute < 10) display_time.concat("0");
   display_time += incoming_p.minute; 
@@ -50,8 +50,12 @@ static void updateMainDisplay()
 
   //Last Lux
   String display_lux = "Last: ";
-  display_lux += incoming_p.lux;
-  display_lux += " Lux";
+  if (incoming_p.lux < 65535)
+  {
+    display_lux += incoming_p.lux;
+    display_lux += " Lux";
+  }
+  else display_lux += "Unstable";
   init_label(10, 120, YELLOW, BLACK, 3, display_lux);
 
   //Button Graphics
@@ -71,10 +75,21 @@ void mainDisplay()
 {
   while(1)
   {
+    String prg_bar = "";
     switch(butn){
       case ABUTN:
         //MEASURE
         butn = NONE;
+        command_p.cmd = LUX_READ;
+        result = esp_now_send(rxMAC, (uint8_t*) &command_p, sizeof(command_p));
+        incoming_p.read_done = false;
+        init_label(10, 120, YELLOW, BLACK, 3, "                ");
+        while (!incoming_p.read_done)
+        {
+          init_label(10, 120, BLACK, YELLOW, 3, prg_bar);
+          prg_bar += " ";
+          delay(1000);
+        }
         break;
 
       case BBUTN:
@@ -94,7 +109,7 @@ void mainDisplay()
 
     delay(300);
     lastPacket_s++;
-    if (lastPacket_s > 5) connected = false;
+    if (lastPacket_s > 100) connected = false;
     else                  connected = true;
   }
 }

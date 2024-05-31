@@ -38,6 +38,10 @@ void espnowOnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 void espnowOnDataReceived(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
 #ifdef COMPILE_ESPNOW
+
+  systemPrintln("Received a packet from ESP NOW Radio");
+  memcpy(&incoming_p, incomingData, sizeof(incoming_p));
+/*
     if (espnowState == ESPNOW_PAIRING)
     {
         if (len == sizeof(PairMessage)) // First error check
@@ -73,6 +77,7 @@ void espnowOnDataReceived(const uint8_t *mac, const uint8_t *incomingData, int l
         espnowIncomingRTCM = true;
         lastEspnowRssiUpdate = millis();
     }
+*/
 #endif  // COMPILE_ESPNOW
 }
 

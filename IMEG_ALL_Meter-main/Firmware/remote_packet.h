@@ -10,11 +10,20 @@ struct remote_packet {
   //from Rx RTC
   int hour = 12;
   int minute = 34;
+  int month = 12;
+  int day = 29;
+  int year = 2024;
   
   int rxBatt = 9;
-  
-  //need to clear after we capture it
-  bool luxCapture = false;
- 
-  
+    
 };
+enum rx_command {
+	LUX_READ, READ_DONE, PWR_OFF
+};
+
+struct rx_packet {
+	
+	rx_command cmd = READ_DONE;
+	
+	uint8_t data[32] = {0};
+}

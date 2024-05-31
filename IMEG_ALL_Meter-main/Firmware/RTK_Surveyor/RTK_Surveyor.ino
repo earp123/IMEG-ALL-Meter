@@ -489,6 +489,8 @@ const uint8_t ESPNOW_MAX_PEERS = 5; // Maximum of 5 rovers
 
 uint8_t peer1[] = {0x78, 0x21, 0x84, 0x95, 0x79, 0x69}; //ALL remote MAC
 struct remote_packet outgoing_p;
+struct rx_packet incoming_p;
+int lastPacketSend = 0;
 
 
 unsigned long lastEthernetCheck = 0; // Prevents cable checking from continually happening
@@ -663,8 +665,8 @@ uint16_t lux_read = 0;
                      |                             |     |<->|<---->|SDA, CS_N |
   +--------------+   |                             | I2C |   |      |    I2C   |
   |   VEML7700   |<->|<-->Commands/Sensor -------->|     |-->|----->|SCL, CLK  |
-  |              |   |                             |     |   |36  45|          | 
-  +--------------+   |                             '-----'   |      +----------+
+  +--------------+   |                             |     |   |36  45|          | 
+                     |                             '-----'   |      +----------+
                      |                                       |
                      +---------------------------------------+
 */
@@ -751,6 +753,8 @@ void loop()
 
     //tcpUpdate(); // Turn on TCP Client or Server as needed
 
+    processCommand();
+
     printPosition(); // Periodically print GNSS coordinates if enabled
 
     // A small delay prevents panic if no other I2C or functions are called
@@ -835,6 +839,43 @@ void updateRTC()
     }
 }
 
+void illumRead()
+{
+  if (veml_online)
+  {                                  
+    lux_read = veml.readLux_sd(LUX_READING_SAMPLE_SIZE, STANDARD_DEVIATION_THRESHOLD);
+    if(lux_read < 65535){
+      Serial.print("Lux Reading: "); Serial.println(lux_read);
+      outgoing_p.lux = lux_read;
+    } 
+    else
+    {
+      Serial.println("Lux Reading: Unstable");
+      outgoing_p.lux = -1;
+    } 
+    outgoing_p.read_done = true;
+    esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers  
+    Serial.flush();
+  }
+}
+
+void processCommand()
+{
+    switch (incoming_p.cmd){
+      case READ_DONE:
+        // no op
+        break;
+      case LUX_READ:
+        illumRead();
+        incoming_p.cmd = READ_DONE;
+        break;
+      case PWR_OFF:
+        //power off
+        break;
+      default: break;
+    }
+}
+
 // Called from main loop
 //~SWR deleted the RTCM function code since we're not using that.
 //     Instead, we'll use this function to update the radio packet sent to the ALL Remote, and then send it. 
@@ -850,8 +891,13 @@ void updateRadio()
   outgoing_p.hour = gnssHour;
   outgoing_p.minute = gnssMinute;
 
-  esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers
-
+                              //TODO adjustable param
+  if ((millis() - lastPacketSend) > 10000)
+  {
+    esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers
+    lastPacketSend = millis();
+  }
+  
 }
 
 /*

@@ -7,11 +7,17 @@
 
 #define CHANNEL 1
 
+volatile int GMToffset = 0;
 bool connected = false;
 int lastPacket_s = 6;
-struct remote_packet incoming_p;
+
 File myFile;
 
+const uint8_t rxMAC[6] = {0xEC, 0x64, 0xC9, 0x06, 0x12, 0x44};
+esp_now_peer_info_t ALLReceiver;
+struct remote_packet incoming_p;
+struct rx_packet command_p;
+esp_err_t result;
 enum buttonPress {
   ABUTN, BBUTN, CBUTN, NONE
 };
@@ -49,7 +55,6 @@ void InitESPNow() {
   }
 }
 
-// SWR don't think I need this
 void configDeviceAP() {
   const char *SSID = "ALLRemote";
   bool result = WiFi.softAP(SSID, "imegallremote", CHANNEL, 0);
@@ -75,9 +80,10 @@ void setup() {
   attachInterrupt(38, Bpress, FALLING);
   attachInterrupt(37, Cpress, FALLING);
   
-    
+
+
   //Set device in AP mode to begin with
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_STA);
   // configure device AP mode
   configDeviceAP();
   //M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
@@ -87,6 +93,15 @@ void setup() {
   // Once ESPNow is successfully Init, we will register for recv CB to
   // get recv packer info.
   esp_now_register_recv_cb(OnDataRecv);
+
+  memcpy(ALLReceiver.peer_addr, rxMAC, 6);
+  ALLReceiver.channel = CHANNEL;
+  ALLReceiver.ifidx = WIFI_IF_STA;
+  result = esp_now_add_peer(&ALLReceiver);
+  if (result != ESP_OK)
+  {
+    Serial.println("Failed to add peer");
+  }
 
   mainDisplay();
 
@@ -106,5 +121,6 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 
 void loop() {
 
+  
   
 }
