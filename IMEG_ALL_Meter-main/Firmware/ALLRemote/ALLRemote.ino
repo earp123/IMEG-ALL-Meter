@@ -68,6 +68,7 @@ void configDeviceAP() {
 void setup() {
 
   M5.begin();
+  M5.Power.begin();
   Serial.begin(115200);
   if (!SD.begin(4, SPI, 4000000)) {  
     M5.Lcd.println(
@@ -110,8 +111,8 @@ void setup() {
 // callback when data is recv from Master
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   char macStr[18];
-  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  //snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+  //         mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
   //M5.Lcd.print("Last Packet Recv from: "); M5.Lcd.println(macStr);
   memcpy(&incoming_p, data, data_len);
   
@@ -122,5 +123,25 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 void loop() {
 
   
+  M5.Lcd.setBrightness(0);
+
+  while (butn == NONE)
+  {
+    M5.Power.lightSleep(300000);
+    delay(10);//hoping this feeds the RTC watch dog
+  }
+  
+  M5.Lcd.setBrightness(80);
+  //Set device in AP mode to begin with
+  WiFi.mode(WIFI_STA);
+  // configure device AP mode
+  configDeviceAP();
+  //M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
+  // Init ESPNow with a fallback logic
+  InitESPNow();
+
+  mainDisplay();
+  
+
   
 }

@@ -1,3 +1,5 @@
+#define MAIN_DISPLAY_TIMEOUT_S 45
+
 void init_label(int x_pos, int y_pos, int fg_color, int bg_color, float text_size, String show_text)
 {
   M5.Lcd.setCursor(x_pos, y_pos);
@@ -10,8 +12,8 @@ void init_label(int x_pos, int y_pos, int fg_color, int bg_color, float text_siz
 static void updateMainDisplay()
 {
   //receiver Battery
-  if (connected) init_label(10, 0, BLACK, GREEN, 3, "  ");
-  init_label(12, 2, (connected ? BLACK: WHITE), (connected ? GREEN: BLACK), 2.5, "Rx");
+  init_label(10, 0, (connected ? BLACK : WHITE), (connected ? GREEN : BLACK), 3, "  ");
+  init_label(12, 2, (connected ? BLACK : WHITE), (connected ? GREEN : BLACK), 2.5, "Rx");
   String rx_batt = "";
   rx_batt.concat(incoming_p.rxBatt);
   rx_batt.concat("% ");
@@ -20,8 +22,11 @@ static void updateMainDisplay()
 
   //Time
   String display_time = "";
-  if (incoming_p.hour < 10) display_time.concat(" ");
-  display_time += (incoming_p.hour+GMToffset);
+  int d_hour = incoming_p.hour += GMToffset;
+  if (d_hour < 0) d_hour += 24;
+  else if (d_hour < 10) display_time.concat(" ");
+  display_time += d_hour;
+  
   display_time += ":";
   if (incoming_p.minute < 10) display_time.concat("0");
   display_time += incoming_p.minute; 
@@ -31,15 +36,29 @@ static void updateMainDisplay()
   String display_siv = "SIV:";
   display_siv += incoming_p.satsInView;
   display_siv += " ";//covers up the last digit if we go <10
-  init_label(10, 50, WHITE, BLACK, 3, display_siv);
+  init_label(10, 50, (incoming_p.satsInView > 20) ? GREEN : (incoming_p.satsInView > 0) ? WHITE : RED, BLACK, 3, display_siv);
 
   //Horizontal Accuracy
   String display_hza = "Acc:";
-  display_hza += incoming_p.horizAcc;
-  display_hza += "m";
-  init_label(160, 50, WHITE, BLACK, 2, display_hza);
+  if (incoming_p.horizAcc > 99) 
+    init_label(10, 80, WHITE, BLACK, 3, "--    ");
+  else if (incoming_p.horizAcc > 0.3)
+  {
+    display_hza += incoming_p.horizAcc;
+    display_hza += "m    ";
+    init_label(10, 80, WHITE, BLACK, 3, display_hza);
+  }
+  else
+  {
+    display_hza += incoming_p.horizAcc;
+    display_hza += "m";
+    init_label(10, 80, GREEN, BLACK, 3, display_hza);
+  }
+  
+  
 
   //Lat, Long
+  /*
   String display_lat = "LAT:";
   init_label(10, 80, WHITE, BLACK, 2, display_lat);
   M5.Lcd.print(incoming_p.latit, 8);//just use the print settings from the above init Fn
@@ -47,6 +66,7 @@ static void updateMainDisplay()
   String display_long = "LONG:";
   init_label(10, 100, WHITE, BLACK, 2, display_long);
   M5.Lcd.print(incoming_p.longit, 8);//just use the print settings from the above init Fn
+  */
 
   //Last Lux
   String display_lux = "Last: ";
@@ -56,7 +76,7 @@ static void updateMainDisplay()
     display_lux += " Lux";
   }
   else display_lux += "Unstable";
-  init_label(10, 120, YELLOW, BLACK, 3, display_lux);
+  init_label(10, 120, MAGENTA, BLACK, 3, display_lux);
 
   //Button Graphics
   init_label(30, 216, BLACK, BLUE, 3, "    ");
@@ -73,7 +93,12 @@ static void updateMainDisplay()
 
 void mainDisplay()
 {
-  while(1)
+  
+  updateMainDisplay();
+  butn = NONE;
+  
+  int display_time = millis();
+  while((millis() - display_time) < (MAIN_DISPLAY_TIMEOUT_S*1000))
   {
     String prg_bar = "";
     switch(butn){
@@ -107,9 +132,10 @@ void mainDisplay()
       default: updateMainDisplay();
     }
 
-    delay(300);
+    delay(500);
     lastPacket_s++;
     if (lastPacket_s > 100) connected = false;
     else                  connected = true;
   }
+  M5.Lcd.clear();
 }

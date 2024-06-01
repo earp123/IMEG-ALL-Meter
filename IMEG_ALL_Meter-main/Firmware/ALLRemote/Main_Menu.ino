@@ -1,3 +1,5 @@
+#define MENU_TIMEOUT_S 10
+
 static void updateMenu(int index)
 {
   
@@ -32,7 +34,7 @@ void updateTimeZoneSelect()
   M5.Lcd.setTextSize(3);
   M5.Lcd.setTextColor(WHITE, BLACK);
 
-  M5.Lcd.print("GMT     ");if(GMToffset >= 0) M5.Lcd.print("+"); M5.Lcd.println(GMToffset);
+  M5.Lcd.print("GMT     ");if(GMToffset >= 0) M5.Lcd.print("+"); M5.Lcd.print(GMToffset); M5.Lcd.println(" ");
 }
 
 void timeZoneSelect()
@@ -41,9 +43,10 @@ void timeZoneSelect()
   M5.Lcd.setTextSize(3);
   M5.Lcd.setTextColor(WHITE, BLACK);
 
-  M5.Lcd.print("GMT     ");M5.Lcd.println(GMToffset);
+  M5.Lcd.print("GMT     ");if(GMToffset >= 0) M5.Lcd.print("+"); M5.Lcd.println(GMToffset); M5.Lcd.println(" ");
 
-  while(1)
+  int display_time = millis();
+  while((millis() - display_time) < (MENU_TIMEOUT_S*1000))
   {
     switch(butn){
       case ABUTN:
@@ -68,6 +71,7 @@ void timeZoneSelect()
     }
     delay(300);
   }
+  M5.Lcd.clear();
 }
 
 void mainMenu()
@@ -76,7 +80,8 @@ void mainMenu()
 
   updateMenu(menu_idx);
 
-  while(1)
+  int display_time = millis();
+  while((millis() - display_time) < (MENU_TIMEOUT_S*1000))
   {
     switch(butn){
       case ABUTN:
@@ -123,5 +128,6 @@ void mainMenu()
     }
     delay(300);
   }
+  M5.Lcd.clear();
   
 }
