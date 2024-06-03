@@ -8,6 +8,7 @@
 #define CHANNEL 1
 
 volatile int GMToffset = 0;
+volatile int surveyIdx = 1;
 bool connected = false;
 int lastPacket_s = 6;
 
@@ -110,10 +111,7 @@ void setup() {
 
 // callback when data is recv from Master
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
-  char macStr[18];
-  //snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-  //         mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  //M5.Lcd.print("Last Packet Recv from: "); M5.Lcd.println(macStr);
+  
   memcpy(&incoming_p, data, data_len);
   
   lastPacket_s = 0;
@@ -132,16 +130,16 @@ void loop() {
   }
   
   M5.Lcd.setBrightness(80);
+
   //Set device in AP mode to begin with
   WiFi.mode(WIFI_STA);
+
   // configure device AP mode
   configDeviceAP();
-  //M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
+
   // Init ESPNow with a fallback logic
   InitESPNow();
 
   mainDisplay();
-  
-
   
 }

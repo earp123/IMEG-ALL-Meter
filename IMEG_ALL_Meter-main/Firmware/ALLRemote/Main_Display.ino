@@ -96,7 +96,7 @@ void mainDisplay()
   
   updateMainDisplay();
   butn = NONE;
-  
+
   int display_time = millis();
   while((millis() - display_time) < (MAIN_DISPLAY_TIMEOUT_S*1000))
   {
@@ -120,6 +120,24 @@ void mainDisplay()
       case BBUTN:
         //LOG
         butn = NONE;
+        command_p.cmd = LUX_READ;
+        result = esp_now_send(rxMAC, (uint8_t*) &command_p, sizeof(command_p));
+        incoming_p.read_done = false;
+        init_label(10, 120, YELLOW, BLACK, 3, "                ");
+        while (!incoming_p.read_done)
+        {
+          init_label(10, 120, BLACK, YELLOW, 3, prg_bar);
+          prg_bar += " ";
+          delay(1000);
+        }
+        if (logPoint(SD, "/hello.txt", incoming_p.lux, incoming_p.latit, incoming_p.longit))
+        {
+          //success
+        }
+        else
+        {
+          //failed
+        }
         break;
 
       case CBUTN:
