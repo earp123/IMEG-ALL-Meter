@@ -105,38 +105,44 @@ void mainDisplay()
       case ABUTN:
         //MEASURE
         butn = NONE;
-        command_p.cmd = LUX_READ;
-        result = esp_now_send(rxMAC, (uint8_t*) &command_p, sizeof(command_p));
-        incoming_p.read_done = false;
-        init_label(10, 120, YELLOW, BLACK, 3, "                ");
-        while (!incoming_p.read_done)
+        if (connected)
         {
-          init_label(10, 120, BLACK, YELLOW, 3, prg_bar);
-          prg_bar += " ";
-          delay(1000);
+          command_p.cmd = LUX_READ;
+          result = esp_now_send(rxMAC, (uint8_t*) &command_p, sizeof(command_p));
+          incoming_p.read_done = false;
+          init_label(10, 120, YELLOW, BLACK, 3, "                ");
+          while (!incoming_p.read_done)
+          {
+            init_label(10, 120, BLACK, YELLOW, 3, prg_bar);
+            prg_bar += " ";
+            delay(1000);
+          }
         }
         break;
 
       case BBUTN:
         //LOG
         butn = NONE;
-        command_p.cmd = LUX_READ;
-        result = esp_now_send(rxMAC, (uint8_t*) &command_p, sizeof(command_p));
-        incoming_p.read_done = false;
-        init_label(10, 120, YELLOW, BLACK, 3, "                ");
-        while (!incoming_p.read_done)
+        if (connected)
         {
-          init_label(10, 120, BLACK, YELLOW, 3, prg_bar);
-          prg_bar += " ";
-          delay(1000);
-        }
-        if (logPoint(SD, "/hello.txt", incoming_p.lux, incoming_p.latit, incoming_p.longit))
-        {
-          //success
-        }
-        else
-        {
-          //failed
+          command_p.cmd = LUX_READ;
+          result = esp_now_send(rxMAC, (uint8_t*) &command_p, sizeof(command_p));
+          incoming_p.read_done = false;
+          init_label(10, 120, YELLOW, BLACK, 3, "                ");
+          while (!incoming_p.read_done)
+          {
+            init_label(10, 120, BLACK, YELLOW, 3, prg_bar);
+            prg_bar += " ";
+            delay(1000);
+          }
+          if (logPoint(SD, "/hello.txt", incoming_p.lux, incoming_p.latit, incoming_p.longit))
+          {
+            //success
+          }
+          else
+          {
+            //failed
+          }
         }
         break;
 
@@ -152,7 +158,7 @@ void mainDisplay()
 
     delay(500);
     lastPacket_s++;
-    if (lastPacket_s > 100) connected = false;
+    if (lastPacket_s > 100) connected = false; //connected timeout = delay
     else                  connected = true;
   }
   M5.Lcd.clear();

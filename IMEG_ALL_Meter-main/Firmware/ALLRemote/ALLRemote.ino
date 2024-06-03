@@ -10,7 +10,7 @@
 volatile int GMToffset = 0;
 volatile int surveyIdx = 1;
 bool connected = false;
-int lastPacket_s = 6;
+int lastPacket_s = 101;
 
 File myFile;
 
