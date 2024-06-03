@@ -22,7 +22,7 @@ static void updateMainDisplay()
 
   //Time
   String display_time = "";
-  int d_hour = incoming_p.hour += GMToffset;
+  int d_hour = incoming_p.hour + GMToffset;
   if (d_hour < 0) d_hour += 24;
   else if (d_hour < 10) display_time.concat(" ");
   display_time += d_hour;
@@ -118,6 +118,7 @@ void mainDisplay()
             delay(1000);
           }
         }
+        display_time = millis();
         break;
 
       case BBUTN:
@@ -135,7 +136,7 @@ void mainDisplay()
             prg_bar += " ";
             delay(1000);
           }
-          if (logPoint(SD, "/hello.txt", incoming_p.lux, incoming_p.latit, incoming_p.longit))
+          if (logPoint(SD, currentLogFile.name(), incoming_p.lux, incoming_p.latit, incoming_p.longit))
           {
             //success
           }
@@ -144,6 +145,7 @@ void mainDisplay()
             //failed
           }
         }
+        display_time = millis();
         break;
 
       case CBUTN:

@@ -1,6 +1,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <SD.h>
+#include "FS.h"
 
 #include <M5Unified.h>
 #include "remote_packet.h"
@@ -12,7 +13,8 @@ volatile int surveyIdx = 1;
 bool connected = false;
 int lastPacket_s = 101;
 
-File myFile;
+File sdroot;
+File currentLogFile;
 
 const uint8_t rxMAC[6] = {0xEC, 0x64, 0xC9, 0x06, 0x12, 0x44};
 esp_now_peer_info_t ALLReceiver;
@@ -104,6 +106,9 @@ void setup() {
   {
     Serial.println("Failed to add peer");
   }
+
+  sdroot = SD.open("/");
+  currentLogFile = sdroot.openNextFile();
 
   mainDisplay();
 

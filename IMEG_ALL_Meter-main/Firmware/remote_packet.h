@@ -15,6 +15,8 @@ struct remote_packet {
   int year = 2024;
   
   int rxBatt = 9;
+  
+  bool read_done = true;
     
 };
 enum rx_command {
@@ -26,4 +28,4 @@ struct rx_packet {
 	rx_command cmd = READ_DONE;
 	
 	uint8_t data[32] = {0};
-}
+};

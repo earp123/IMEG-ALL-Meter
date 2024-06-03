@@ -53,12 +53,14 @@ void timeZoneSelect()
         butn = NONE;
         GMToffset--;
         updateTimeZoneSelect();
+        display_time = millis();
         break;
 
       case BBUTN:
         butn = NONE;
         GMToffset++;
         updateTimeZoneSelect();
+        display_time = millis();
         break;
 
       case CBUTN:
@@ -89,6 +91,7 @@ void mainMenu()
         menu_idx++;
         if (menu_idx>5) menu_idx = 1;
         updateMenu(menu_idx);
+        display_time = millis();
         break;
 
       case BBUTN:
@@ -96,6 +99,7 @@ void mainMenu()
         menu_idx--;
         if (menu_idx<1) menu_idx = 5;
         updateMenu(menu_idx);
+        display_time = millis();
         break;
 
       case CBUTN:
@@ -113,7 +117,8 @@ void mainMenu()
           
         }
         else if (menu_idx == 2){//FS MENU
-          //M5.Lcd.clear();
+          M5.Lcd.clear();
+          FSmenu();
           
         }
         else if (menu_idx == 1){//TIME ZONE MENU
