@@ -41,7 +41,7 @@ static void updateMainDisplay()
   //Horizontal Accuracy
   String display_hza = "Acc:";
   if (incoming_p.horizAcc > 99) 
-    init_label(10, 80, WHITE, BLACK, 3, "--    ");
+    init_label(10, 80, WHITE, BLACK, 3, "--             ");
   else if (incoming_p.horizAcc > 0.3)
   {
     display_hza += incoming_p.horizAcc;
@@ -78,8 +78,13 @@ static void updateMainDisplay()
   else display_lux += "Unstable";
   init_label(10, 120, MAGENTA, BLACK, 3, display_lux);
 
+  String batteryLevel = "Remote:";
+  batteryLevel += M5.Power.getBatteryLevel();
+  batteryLevel += "%    ";
+  init_label( 10, 155, CYAN, BLACK, 2, batteryLevel);
+
   //Button Graphics
-  init_label(30, 216, BLACK, BLUE, 3, "    ");
+  init_label( 30, 216, BLACK, BLUE, 3, "    ");
   init_label(125, 216, BLACK, BLUE, 3, "    ");
   init_label(220, 216, BLACK, BLUE, 3, "    ");
 
