@@ -82,9 +82,13 @@ void surveySelect(int fileOp)
             M5.Lcd.clear();
             mainDisplay();
           } 
-          //TODO Delete Op 
-          
-
+          else if (fileOp == DELETE_OP)
+          {
+            deleteSurvey(menu_idx);
+            delay(3000);
+            M5.Lcd.clear();
+            FSmenu();
+          }
           break;
         case NONE:
           //fall through
@@ -132,13 +136,20 @@ bool logPoint(fs::FS &fs, const char * path, uint16_t luxVal, double latittude, 
     return retVal;
 }
 
-void deleteFile(fs::FS &fs, const char * path){
-    Serial.printf("Deleting file: %s\n", path);
-    if(fs.remove(path)){
-        Serial.println("File deleted");
-    } else {
-        Serial.println("Delete failed");
-    }
+void deleteSurvey(int sel){
+
+  File file;
+  
+  for (int i = 1; i < sel; i++)
+  {
+    file = sdroot.openNextFile();
+  }
+  
+  SD.remove(file.path());
+  M5.Lcd.clear();
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.println(file.name());
+  M5.Lcd.println("Deleted");
 }
 
 void updateFSmenu(int index)

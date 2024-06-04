@@ -83,6 +83,11 @@ static void updateMainDisplay()
   batteryLevel += "%    ";
   init_label( 10, 155, CYAN, BLACK, 2, batteryLevel);
 
+  //Current File Name
+  String currentSurvey = "Log:";
+  currentSurvey.concat(currentLogFile.name());
+  init_label(10, 180, WHITE, BLACK, 2, currentSurvey);
+
   //Button Graphics
   init_label( 30, 216, BLACK, BLUE, 3, "    ");
   init_label(125, 216, BLACK, BLUE, 3, "    ");

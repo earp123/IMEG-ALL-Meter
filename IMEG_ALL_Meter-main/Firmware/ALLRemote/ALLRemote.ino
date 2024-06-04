@@ -72,25 +72,18 @@ void setup() {
 
   M5.begin();
   M5.Power.begin();
+  M5.Rtc.begin();
   Serial.begin(115200);
-  if (!SD.begin(4, SPI, 4000000)) {  
-    M5.Lcd.println(
-        "Card failed, or not present");
-    while (1)
-        ;
-  }
 
   attachInterrupt(39, Apress, FALLING);
   attachInterrupt(38, Bpress, FALLING);
   attachInterrupt(37, Cpress, FALLING);
   
 
-
   //Set device in AP mode to begin with
   WiFi.mode(WIFI_STA);
   // configure device AP mode
   configDeviceAP();
-  //M5.Lcd.print("AP MAC: "); M5.Lcd.println(WiFi.softAPmacAddress());
   // Init ESPNow with a fallback logic
   InitESPNow();
 
@@ -107,8 +100,17 @@ void setup() {
     Serial.println("Failed to add peer");
   }
 
+  if (!SD.begin(4, SPI, 4000000)) {  
+    M5.Lcd.println(
+        "Card failed, or not present");
+    while (1)
+        ;
+  }
+
   sdroot = SD.open("/");
   currentLogFile = sdroot.openNextFile();
+
+  M5.Rtc.begin();
 
   mainDisplay();
 
