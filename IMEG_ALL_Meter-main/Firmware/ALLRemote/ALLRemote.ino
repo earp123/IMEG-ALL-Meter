@@ -8,13 +8,14 @@
 
 #define CHANNEL 1
 
-volatile int GMToffset = 0;
+volatile int GMToffset;
 volatile int surveyIdx = 1;
 bool connected = false;
 int lastPacket_s = 101;
 
 File sdroot;
-File currentLogFile;
+String currentLogFileName = "No Current Log Files";
+String currentLogFilePath;
 
 const uint8_t rxMAC[6] = {0xEC, 0x64, 0xC9, 0x06, 0x12, 0x44};
 esp_now_peer_info_t ALLReceiver;
@@ -79,7 +80,6 @@ void setup() {
   attachInterrupt(38, Bpress, FALLING);
   attachInterrupt(37, Cpress, FALLING);
   
-
   //Set device in AP mode to begin with
   WiFi.mode(WIFI_STA);
   // configure device AP mode
@@ -101,17 +101,17 @@ void setup() {
   }
 
   if (!SD.begin(4, SPI, 4000000)) {  
-    M5.Lcd.println(
-        "Card failed, or not present");
+    M5.Lcd.println("Card failed, or not present");
     while (1)
         ;
   }
 
-  sdroot = SD.open("/");
-  currentLogFile = sdroot.openNextFile();
-
-  M5.Rtc.begin();
-
+  if (!SD.exists("/surveys"))
+  {
+    SD.mkdir("/surveys");
+    Serial.println("surveys directory created");
+  }  
+  sdroot = SD.open("/surveys");
   mainDisplay();
 
 }
@@ -127,7 +127,6 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 
 void loop() {
 
-  
   M5.Lcd.setBrightness(0);
 
   while (butn == NONE)

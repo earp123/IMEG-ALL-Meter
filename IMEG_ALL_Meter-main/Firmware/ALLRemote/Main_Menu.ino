@@ -43,6 +43,8 @@ void timeZoneSelect()
   M5.Lcd.setTextSize(3);
   M5.Lcd.setTextColor(WHITE, BLACK);
 
+
+
   M5.Lcd.print("GMT     ");if(GMToffset >= 0) M5.Lcd.print("+"); M5.Lcd.println(GMToffset); M5.Lcd.println(" ");
 
   int display_time = millis();
@@ -110,11 +112,11 @@ void mainMenu()
         }
         else if (menu_idx == 4){//RX MENU
           //M5.Lcd.clear();
-          
+          //TODO
         }
         else if (menu_idx == 3){//VEML7700 
           //M5.Lcd.clear();
-          
+          //TODO
         }
         else if (menu_idx == 2){//FS MENU
           M5.Lcd.clear();

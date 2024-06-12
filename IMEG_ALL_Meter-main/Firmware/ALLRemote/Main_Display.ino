@@ -85,7 +85,7 @@ static void updateMainDisplay()
 
   //Current File Name
   String currentSurvey = "Log:";
-  currentSurvey.concat(currentLogFile.name());
+  currentSurvey.concat(currentLogFileName);
   init_label(10, 180, WHITE, BLACK, 2, currentSurvey);
 
   //Button Graphics
@@ -146,13 +146,15 @@ void mainDisplay()
             prg_bar += " ";
             delay(1000);
           }
-          if (logPoint(SD, currentLogFile.name(), incoming_p.lux, incoming_p.latit, incoming_p.longit))
+          if (logPoint(SD, currentLogFilePath, incoming_p.lux, incoming_p.latit, incoming_p.longit))
           {
             //success
+            Serial.println("File written to");
           }
           else
           {
             //failed
+            Serial.println("Failed to write");
           }
         }
         display_time = millis();
