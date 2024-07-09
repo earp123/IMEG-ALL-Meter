@@ -616,7 +616,7 @@ unsigned long lbandLastReport = 0;
 #include "IMEG_VEML7700.h"
 IMEG_VEML7700 veml = IMEG_VEML7700();
 bool veml_online = true;
-uint16_t lux_read = 0;
+float lux_read = 0;
 
 //TODO make these parameters user adjustable eventually \/
 #define LUX_READING_SAMPLE_SIZE 10 //increasing will block for longer
@@ -734,10 +734,9 @@ void loop()
         theGNSS.checkUblox();     // Regularly poll to get latest data and any RTCM
         theGNSS.checkCallbacks(); // Process any callbacks: ie, eventTriggerReceived
     }
-
     updateSystemState();
     
-    updateBattery();
+    //updateBattery();
     
     updateRTC(); // Set system time to GNSS once we have fix
 
@@ -745,7 +744,7 @@ void loop()
 
     updateSerial(); // Menu system via ESP32 USB connection
 
-    wifiUpdate(); // Bring up WiFi when services need it
+    //wifiUpdate(); // Bring up WiFi when services need it
 
     updateRadio(); // Update and send packets to ALL Remote
 
@@ -755,7 +754,7 @@ void loop()
 
     processCommand();
 
-    printPosition(); // Periodically print GNSS coordinates if enabled
+    //printPosition(); // Periodically print GNSS coordinates if enabled
 
     // A small delay prevents panic if no other I2C or functions are called
     delay(10);
@@ -861,19 +860,25 @@ void illumRead()
 
 void processCommand()
 {
-    switch (incoming_p.cmd){
-      case READ_DONE:
-        // no op
-        break;
-      case LUX_READ:
-        illumRead();
-        incoming_p.cmd = READ_DONE;
-        break;
-      case PWR_OFF:
-        //power off
-        break;
-      default: break;
-    }
+  switch (incoming_p.cmd){
+    case NO_CMD:
+      // no op
+      Serial.println("No Command");
+      break;
+    case LUX_READ:
+      Serial.println("LUX READ COMMAND");
+      outgoing_p.cmd_recvd = true;
+      outgoing_p.read_done = false;
+      esp_now_send(0, (uint8_t *)&outgoing_p, sizeof(outgoing_p)); // Send packet to all peers  
+      illumRead();
+      incoming_p.cmd = NO_CMD;
+      outgoing_p.cmd_recvd = false;
+      break;
+    case PWR_OFF:
+      //power off
+      break;
+    default: break;
+  }
 }
 
 // Called from main loop
