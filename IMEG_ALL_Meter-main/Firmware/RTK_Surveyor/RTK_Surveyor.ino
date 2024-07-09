@@ -28,7 +28,7 @@
 //#define COMPILE_ETHERNET // Comment out to remove REFERENCE_STATION Ethernet (W5500) support
 // #define REF_STN_GNSS_DEBUG //Uncomment this line to output GNSS library debug messages on serialGNSS. Ref Stn only.
 // Needs ENABLE_DEVELOPER
-#define COMPILE_WEBSERVER
+//#define COMPILE_WEBSERVER
 #define COMPILE_MENUS
 
 #if defined(COMPILE_WIFI) || defined(COMPILE_ETHERNET)
