@@ -794,7 +794,7 @@ typedef struct
     bool enablePrintPosition = false;
     bool enablePrintIdleTime = false;
     bool enablePrintBatteryMessages = true;
-    bool enablePrintRoverAccuracy = true;
+    bool enablePrintRoverAccuracy = false;
     bool enablePrintBadMessages = false;
     bool enablePrintLogFileMessages = false;
     bool enablePrintLogFileStatus = true;

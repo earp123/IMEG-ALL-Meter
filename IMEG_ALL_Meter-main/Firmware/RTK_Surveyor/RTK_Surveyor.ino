@@ -736,13 +736,13 @@ void loop()
     }
     updateSystemState();
     
-    //updateBattery();
+    updateBattery();
     
     updateRTC(); // Set system time to GNSS once we have fix
 
     reportHeap(); // If debug enabled, report free heap
 
-    updateSerial(); // Menu system via ESP32 USB connection
+    //updateSerial(); // Menu system via ESP32 USB connection
 
     //wifiUpdate(); // Bring up WiFi when services need it
 
@@ -757,7 +757,7 @@ void loop()
     //printPosition(); // Periodically print GNSS coordinates if enabled
 
     // A small delay prevents panic if no other I2C or functions are called
-    delay(10);
+    delay(100);
 }
 
 
@@ -863,7 +863,7 @@ void processCommand()
   switch (incoming_p.cmd){
     case NO_CMD:
       // no op
-      Serial.println("No Command");
+      //Serial.println("No Command");
       break;
     case LUX_READ:
       Serial.println("LUX READ COMMAND");
